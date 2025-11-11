@@ -52,7 +52,6 @@
     padding:6px 8px calc(6px + env(safe-area-inset-bottom,0)) 8px
   }
   nav.bottom .tab{flex:1;border-radius:12px;padding:.75rem .4rem;text-align:center;font-size:.9rem;border:1px solid transparent}
-  /* feedback เล็ก ๆ เมื่อ apply tiers */
   .flash{animation:flash 1.2s ease}
   @keyframes flash{0%{background:rgba(99,102,241,.08)}100%{background:transparent}}
 </style>
@@ -231,7 +230,7 @@
     <div class="font-semibold mb-2">แนวทางและข้อควรทราบ</div>
     <ul class="list-disc pl-6 space-y-1 text-sm">
       <li>IRR ต่อ “งวด” แปลงเป็น IRR ต่อปีด้วย <code>(1 + r_period)^(งวด/ปี) − 1</code></li>
-      <li>ภาษี: ตั้งค่าได้ทั้งอัตรา, เพดานต่องวด/รวม, และช่วงงวด</li>
+      <li>ภาษี: คิดสิทธิ “ต่อปีที่มีจ่ายเบี้ยจริง” และกระจายตามสัดส่วนเบี้ยของปีนั้น</li>
     </ul>
   </section>
 </main>
@@ -289,7 +288,9 @@ var state = {
   freq: undefined, periods: undefined, payPeriods: undefined,
   premium: undefined, feePerPeriod: undefined, finalLump: undefined,
   taxRate: undefined, taxStart: undefined, taxEnd: undefined,
-  taxCapPerPeriod: undefined, taxCapContract: undefined, taxOnlyWhenPay: true,
+  taxCapPerPeriod: undefined, // ตีความเป็น "เพดานต่อปี"
+  taxCapContract: undefined,  // เพดานรวมทั้งสัญญา
+  taxOnlyWhenPay: true,
   interim: [], tiers: [], charts: {cf:null, cum:null}
 };
 
@@ -303,36 +304,74 @@ function ensureTaxDefaults(){
 }
 
 /* ===== Builders ===== */
+/* ใหม่: ภาษีคำนวณเป็นรายปี (ต่อปีที่มีจ่ายเบี้ยจริง) และกระจายตามสัดส่วนเบี้ยในปีนั้น */
 function buildRows(){
   var N = state.periods|0;
+  var freq = Math.max(1, state.freq|0);                    // งวดต่อปี (1=รายปี, 12=รายเดือน ฯลฯ)
   var payN = Math.max(0, Math.min(state.payPeriods|0, N));
+
   while(state.interim.length < N) state.interim.push(0);
   if(state.interim.length > N) state.interim = state.interim.slice(0,N);
 
   ensureTaxDefaults();
 
+  // helper ช่วยหาปีของงวดที่ p (เริ่มที่ปี 1)
+  function yearOf(p){ return Math.floor((p-1)/freq)+1; }
+  var totalYears = yearOf(Math.max(N,1));
+
+  // รวมเบี้ยที่ "จ่ายจริง" ต่อปี
+  var yearPaySum = Array.from({length: totalYears+1}, function(){return 0;});
+  for(var p=1;p<=N;p++){
+    var pay = (p<=payN) ? (toNum(state.premium)||0) : 0;
+    if(pay>0) yearPaySum[yearOf(p)] += pay;
+  }
+
+  // เพดานต่อปี/ต่อสัญญา
+  var rate   = toNum(state.taxRate)||0;
+  var capY   = (state.taxCapPerPeriod==null ? 9e14 : toNum(state.taxCapPerPeriod)); // เพดาน "ต่อปี"
+  var capAll = (state.taxCapContract==null ? 9e14 : toNum(state.taxCapContract));   // เพดาน "รวมสัญญา"
+
+  // สิทธิรวมต่อปี (คำนวณจาก % ของเบี้ยรวมต่อปี และตัดเพดานต่อปี)
+  var yearTaxTotal = Array.from({length: totalYears+1}, function(){return 0;});
+  for(var y=1;y<=totalYears;y++){
+    var base = yearPaySum[y] * rate;  // % ของเบี้ยรวมทั้งปี
+    yearTaxTotal[y] = Math.min(base, capY);
+  }
+  // ยอดสิทธิที่เหลือต่อปี (เอาไว้ถูกกระจายออกไปทีละงวด)
+  var yearTaxRemain = yearTaxTotal.slice();
+
   var rows = [];
-  var taxAccum = 0;
+  var taxAccumContract = 0;
+
   for(var i=0;i<N;i++){
     var p = i+1;
-    var pay = (p<=payN) ? toNum(state.premium) : 0;
-    var fee = toNum(state.feePerPeriod);
-    var eligible = (state.taxStart!=null && state.taxEnd!=null) ? (p>=state.taxStart && p<=state.taxEnd) : false;
-    var tax = 0;
-    if(eligible){
-      var rate = toNum(state.taxRate);
-      var capP = (state.taxCapPerPeriod==null? 9e14 : toNum(state.taxCapPerPeriod));
-      var capC = (state.taxCapContract==null? 9e14 : toNum(state.taxCapContract));
-      tax = Math.min(pay*rate, capP);
-      if(taxAccum + tax > capC) tax = Math.max(0, capC - taxAccum);
-    }
-    taxAccum += tax;
+    var y = yearOf(p);
 
+    var pay = (p<=payN) ? (toNum(state.premium)||0) : 0;
+    var fee = toNum(state.feePerPeriod)||0;
     var between = toNum(state.interim[i]||0);
-    var finalAmt = (p===N) ? toNum(state.finalLump||0) : 0;
+    var finalAmt = (p===N) ? (toNum(state.finalLump)||0) : 0;
+
+    var inWindow = (state.taxStart!=null && state.taxEnd!=null) ? (p>=state.taxStart && p<=state.taxEnd) : false;
+    var eligible = inWindow && (!state.taxOnlyWhenPay || pay>0);
+
+    var tax = 0;
+    if(eligible && rate>0 && yearPaySum[y]>0 && yearTaxRemain[y]>0){
+      var share = (pay>0 ? (pay / yearPaySum[y]) : 0); // สัดส่วนเบี้ยของงวดนี้ในปี y
+      tax = yearTaxRemain[y] * share;
+
+      // เคารพเพดานรวมทั้งสัญญา
+      if(taxAccumContract + tax > capAll){
+        tax = Math.max(0, capAll - taxAccumContract);
+      }
+      taxAccumContract += tax;
+      yearTaxRemain[y]  = Math.max(0, yearTaxRemain[y] - tax);
+    }
+
     var total = (between + tax + finalAmt) - pay - fee;
-    rows.push({period:p, pay:pay, fee:fee, between:between, tax:tax, final:finalAmt, total:total});
+    rows.push({ period:p, pay:pay, fee:fee, between:between, tax:tax, final:finalAmt, total:total });
   }
+
   return rows;
 }
 function cashflows(rows){
@@ -379,7 +418,6 @@ function renderTable(rows){
   }
   tb.innerHTML = html;
 
-  // footer sums
   var sumPrem=0,sumFee=0,sumInterim=0,sumTax=0,sumFinal=0,sumTotal=0;
   for(var j=0;j<rows.length;j++){
     sumPrem += -rows[j].pay; sumFee += -rows[j].fee;
@@ -536,7 +574,6 @@ function restore(snap){
   for(var k in def){ if(def.hasOwnProperty(k) && snap && (k in snap)) def[k]=snap[k]; }
   for(var k2 in def){ if(def.hasOwnProperty(k2)) state[k2]=def[k2]; }
   refreshAll();
-  // sync view after restore
   var hash = (location.hash||'#simple').replace('#','');
   setView(allowedViews.indexOf(hash)===-1 ? 'simple' : hash);
 }
@@ -569,7 +606,7 @@ function refreshAll(){
 
 /* ===== Events ===== */
 function bind(){
-  // Tabs click
+  // Tabs
   var viewBtns = document.querySelectorAll('[data-view]');
   for(var i=0;i<viewBtns.length;i++){
     (function(b){
@@ -580,7 +617,6 @@ function bind(){
       });
     })(viewBtns[i]);
   }
-  // back/forward
   window.addEventListener('popstate', function(){
     var v = (location.hash||'#simple').slice(1);
     setView(allowedViews.indexOf(v)===-1 ? 'simple' : v);
@@ -629,7 +665,7 @@ function bind(){
   if($('taxRate')) $('taxRate').oninput = function(){ state.taxRate = toNum(this.value)/100 || 0; refreshAll(); };
   if($('finalLump')) $('finalLump').oninput = function(){ state.finalLump = toNum(this.value)||undefined; refreshAll(); };
 
-  // Table inline edit (ไม่ re-render ทั้งตาราง)
+  // Table inline edit
   var tb = $('tbody');
   if(tb){
     tb.addEventListener('input', function(e){
@@ -675,13 +711,11 @@ function bind(){
       if(s>e) continue;
       for(var y=s-1;y<=e-1;y++) state.interim[y] = Number(t.amt);
     }
-    // feedback เล็กๆ
     var tiers = $('tiers'); if(tiers){ tiers.classList.remove('flash'); void tiers.offsetWidth; tiers.classList.add('flash'); }
-    // อัปเดตเฉพาะส่วน (เร็ว)
     renderTable(); refreshKPIs(); if(!$('view-charts').classList.contains('hidden')) renderCharts();
   };
 
-  // a11y arrow keys บน tablist
+  // a11y arrow keys
   var tablists = document.querySelectorAll('[role="tablist"]');
   for(var k=0;k<tablists.length;k++){
     tablists[k].addEventListener('keydown', function(e){
