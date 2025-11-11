@@ -67,6 +67,7 @@
 </style>
 </head>
 <body class="no-x">
+<!-- App Bar -->
 <header class="appbar">
   <div class="wrap py-3 flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
@@ -75,6 +76,7 @@
         <span class="kbd">IRR Pro</span><span class="kbd">Tax Cap</span><span class="kbd">Compare</span><span class="kbd">Sensitivity</span>
       </div>
     </div>
+    <!-- Desktop segmented tabs -->
     <div class="hidden md:block">
       <div class="seg">
         <button class="active" data-view="simple">Simple</button>
@@ -117,8 +119,7 @@
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">ความถี่งวด</label>
         <select id="freq" class="input">
-          <option value="" selected disabled>เลือกความถี่งวด</option>
-          <option value="1">รายปี (1 งวด/ปี)</option>
+          <option value="1" selected>รายปี (1 งวด/ปี)</option>
           <option value="2">รายครึ่งปี (2 งวด/ปี)</option>
           <option value="4">รายไตรมาส (4 งวด/ปี)</option>
           <option value="12">รายเดือน (12 งวด/ปี)</option>
@@ -126,11 +127,11 @@
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">จำนวนงวดทั้งหมด</label>
-        <input id="periods" type="number" class="input" min="1" max="600" placeholder="เช่น 19" inputmode="numeric">
+        <input id="periods" type="number" class="input" min="1" max="600" value="19" inputmode="numeric">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">งวดที่ “จ่ายเบี้ย”</label>
-        <input id="payPeriods" type="number" class="input" min="0" placeholder="เช่น 10" inputmode="numeric">
+        <input id="payPeriods" type="number" class="input" min="0" value="10" inputmode="numeric">
       </div>
       <div class="no-print">
         <label class="block text-sm text-[var(--muted)] mb-1">ดำเนินการ</label>
@@ -149,34 +150,34 @@
     <div class="grid1 grid2-sm md:grid-cols-3">
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เบี้ยต่อ “งวด”</label>
-        <input id="s-premium" type="number" class="input" step="0.01" placeholder="เช่น 50000" inputmode="decimal">
+        <input id="s-premium" type="number" class="input" step="0.01" value="50000" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เงินคืนระหว่างงวด (คงที่)</label>
-        <input id="s-interim" type="number" class="input" step="0.01" placeholder="เช่น 3000" inputmode="decimal">
+        <input id="s-interim" type="number" class="input" step="0.01" value="3000" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เริ่มรับงวดที่</label>
-        <input id="s-interim-start" type="number" class="input" min="1" placeholder="เช่น 1" inputmode="numeric">
+        <input id="s-interim-start" type="number" class="input" min="1" value="1" inputmode="numeric">
       </div>
     </div>
     <div class="grid1 grid2-sm md:grid-cols-3 mt-3">
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">จำนวนงวดที่รับระหว่างงวด</label>
-        <input id="s-interim-count" type="number" class="input" min="0" placeholder="เช่น 19" inputmode="numeric">
+        <input id="s-interim-count" type="number" class="input" min="0" value="19" inputmode="numeric">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เงินก้อนสุดท้าย (งวดสุดท้าย)</label>
-        <input id="s-final" type="number" class="input" step="0.01" placeholder="เช่น 0" inputmode="decimal">
+        <input id="s-final" type="number" class="input" step="0.01" value="0" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">อัตราลดหย่อนภาษี (% ของเบี้ยที่จ่าย)</label>
-        <input id="s-tax-rate" type="number" class="input" step="0.01" placeholder="เช่น 15" inputmode="decimal">
+        <input id="s-tax-rate" type="number" class="input" step="0.01" value="15" inputmode="decimal">
       </div>
     </div>
     <div class="flex flex-wrap gap-2 mt-3">
       <button class="btn btn-primary w-full sm:w-auto" id="applySimple">คำนวณ/เติมค่า</button>
-      <div class="hint">* ต้องระบุ “จำนวนงวดทั้งหมด” ก่อน</div>
+      <div class="hint">* กรอกครั้งเดียวแล้วคำนวณทันที</div>
     </div>
   </section>
 
@@ -186,19 +187,19 @@
     <div class="grid1 grid2-sm md:grid-cols-4">
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เบี้ย/งวด</label>
-        <input id="premium" type="number" class="input" step="0.01" placeholder="เช่น 50000" inputmode="decimal">
+        <input id="premium" type="number" class="input" step="0.01" value="50000" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">ค่าธรรมเนียม/งวด (หักออก)</label>
-        <input id="feePerPeriod" type="number" class="input" step="0.01" placeholder="เช่น 0" inputmode="decimal">
+        <input id="feePerPeriod" type="number" class="input" step="0.01" value="0" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">อัตราลดหย่อนภาษี (%)</label>
-        <input id="taxRate" type="number" class="input" step="0.01" placeholder="เช่น 15" inputmode="decimal">
+        <input id="taxRate" type="number" class="input" step="0.01" value="15" inputmode="decimal">
       </div>
       <div>
         <label class="block text-sm text-[var(--muted)] mb-1">เงินก้อนสุดท้าย</label>
-        <input id="finalLump" type="number" class="input" step="0.01" placeholder="เช่น 0" inputmode="decimal">
+        <input id="finalLump" type="number" class="input" step="0.01" value="0" inputmode="decimal">
       </div>
     </div>
 
@@ -209,8 +210,10 @@
         <div class="hint">คลิก “เพิ่มช่วง” เพื่อกำหนดได้ไม่จำกัด</div>
       </div>
 
+      <!-- รายการช่วง (render เฉพาะส่วนนี้) -->
       <div id="tiers-list" class="space-y-2 mt-2"></div>
 
+      <!-- ปุ่มควบคุม (ไม่ถูก re-render แล้ว) -->
       <div class="grid1 grid2 gap-2 mt-3">
         <button class="btn" id="addTier">+ เพิ่มช่วง</button>
         <div class="flex gap-2 flex-wrap">
@@ -281,6 +284,7 @@
   </section>
 </main>
 
+<!-- Bottom Tabs (mobile) -->
 <nav class="bottom md:hidden">
   <div class="wrap px-0">
     <div class="grid grid-cols-4 gap-2">
@@ -323,18 +327,17 @@ function irr(cf){
 
 /* ========= State ========= */
 const state = {
-  freq: undefined, periods: undefined, payPeriods: undefined,
-  premium: undefined, feePerPeriod: undefined, finalLump: undefined,
-  taxRate: undefined, taxStart: undefined, taxEnd: undefined,
-  taxCapPerPeriod: undefined, taxCapContract: undefined, taxOnlyWhenPay: true,
+  freq: 1, periods: 19, payPeriods: 10,
+  premium: 50000, feePerPeriod: 0, finalLump: 0,
+  taxRate: 0.15, taxStart: 1, taxEnd: 19,
+  taxCapPerPeriod: 999999999, taxCapContract: 999999999, taxOnlyWhenPay: true,
   interim: [], tiers: [], scenarios: {A:null,B:null,C:null},
   charts: {cf:null, cum:null}
 };
 
-/* ========= Builder ========= */
+/* ========= Cashflow builder ========= */
 function buildRows(){
-  const N = (state.periods|0); // 0 เมื่อยังไม่ได้ตั้งค่า
-  const payN = Math.max(0, Math.min((state.payPeriods|0), N));
+  const N = state.periods|0, payN = Math.max(0, Math.min(state.payPeriods|0, N));
   while(state.interim.length < N) state.interim.push(0);
   if(state.interim.length > N) state.interim = state.interim.slice(0,N);
 
@@ -342,22 +345,21 @@ function buildRows(){
   let taxAccum = 0;
   for(let i=0;i<N;i++){
     const p = i+1;
-    const pay = (p<=payN) ? Number(state.premium||0) : 0;
-    const fee = Number(state.feePerPeriod||0);
+    const pay = (p<=payN) ? state.premium : 0;
+    const fee = state.feePerPeriod || 0;
 
-    const eligible = (state.taxStart && state.taxEnd) ? (p>=state.taxStart && p<=state.taxEnd) : false;
+    const eligible = (p>=state.taxStart && p<=state.taxEnd) && (!state.taxOnlyWhenPay || pay>0);
     let tax = 0;
     if(eligible){
-      const rate = Number(state.taxRate||0);
-      const capP = Number(state.taxCapPerPeriod||Infinity);
-      const capC = Number(state.taxCapContract||Infinity);
-      tax = Math.min(pay*rate, capP);
-      if(taxAccum + tax > capC) tax = Math.max(0, capC - taxAccum);
+      tax = Math.min(pay*state.taxRate, state.taxCapPerPeriod);
+      if(taxAccum + tax > state.taxCapContract){
+        tax = Math.max(0, state.taxCapContract - taxAccum);
+      }
     }
     taxAccum += tax;
 
     const between = Number(state.interim[i]||0);
-    const final = (p===N) ? Number(state.finalLump||0) : 0;
+    const final = (p===N) ? state.finalLump : 0;
 
     const total = (between + tax + final) - pay - fee;
     rows.push({period:p, pay, fee, between, tax, final, total});
@@ -370,7 +372,7 @@ function cashflows(){ return buildRows().map(r=>r.total); }
 function refreshKPIs(){
   const cf = cashflows();
   const rPer = irr(cf);
-  const k = (state.freq>0) ? Math.max(1, state.freq) : 1;
+  const k = state.freq>0 ? Math.max(1, state.freq) : 1;
   const rAnn = isFinite(rPer) ? Math.pow(1+rPer, k)-1 : NaN;
 
   const rows = buildRows();
@@ -390,7 +392,7 @@ function renderTable(){
       <td>${r.period}</td>
       <td>${fmt(-r.pay)}</td>
       <td>${fmt(-r.fee)}</td>
-      <td><input class="input" type="number" step="0.01" data-row="${i}" value="${r.between||0}" inputmode="decimal"></td>
+      <td><input class="input" type="number" step="0.01" data-row="${i}" value="${r.between}" inputmode="decimal"></td>
       <td>${fmt(r.tax)}</td>
       <td>${fmt(r.final)}</td>
       <td>${fmt(r.total)}</td>
@@ -405,16 +407,18 @@ function renderTable(){
   $('sTotal').textContent   = fmt(rows.reduce((a,r)=>a + r.total, 0));
 }
 
-/* ====== Tiers ====== */
+/* ====== TIERS (render เฉพาะรายการ ไม่แตะปุ่ม) ====== */
 function renderTiers(){
   const box = $('tiers-list');
   if(!box) return;
   box.innerHTML = state.tiers.map((t,idx)=>`
     <div class="grid1 md:grid-cols-4 gap-2">
-      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="from" value="${t.from??''}" placeholder="จากงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="to" value="${t.to??''}" placeholder="ถึงงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t.amt??''}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
-      <div class="flex gap-2"><button class="btn w-full" data-tier-del="${idx}">ลบช่วง</button></div>
+      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="from" value="${t.from}" placeholder="จากงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="to" value="${t.to}" placeholder="ถึงงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t.amt}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
+      <div class="flex gap-2">
+        <button class="btn w-full" data-tier-del="${idx}">ลบช่วง</button>
+      </div>
     </div>
   `).join('');
 }
@@ -422,7 +426,7 @@ function syncTiersFromDOM(){
   const nodes = document.querySelectorAll('#tiers-list [data-tier][data-k]');
   nodes.forEach(el=>{
     const i=+el.dataset.tier, k=el.dataset.k;
-    const val = el.value==='' ? undefined : (k==='amt' ? Number(el.value||0) : Number(el.value||1));
+    const val = (k==='amt') ? Number(el.value||0) : Number(el.value||1);
     if(state.tiers[i]) state.tiers[i][k]=val;
   });
 }
@@ -434,16 +438,15 @@ function renderCharts(){
   const cf = rows.map(r=>r.total);
   const cum = rows.reduce((arr,v)=>{ arr.push((arr.at(-1)||0)+v); return arr; }, []);
 
-  if(state.charts.cf){ state.charts.cf.destroy(); state.charts.cf=null; }
-  if(state.charts.cum){ state.charts.cum.destroy(); state.charts.cum=null; }
-  if(rows.length===0) return;
-
+  if(state.charts.cf) state.charts.cf.destroy();
   const cfCtx = document.getElementById('cfChart').getContext('2d');
   state.charts.cf = new Chart(cfCtx, {
     type:'bar',
     data:{ labels, datasets:[{ label:'Total', data: cf }]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
   });
+
+  if(state.charts.cum) state.charts.cum.destroy();
   const cumCtx = document.getElementById('cumChart').getContext('2d');
   state.charts.cum = new Chart(cumCtx, {
     type:'line',
@@ -454,12 +457,15 @@ function renderCharts(){
 
 /* ========= Tabs / Events ========= */
 function bind(){
-  document.querySelectorAll('[data-view]').forEach(b=>{
+  // Tabs
+  const tabs = document.querySelectorAll('[data-view]');
+  tabs.forEach(b=>{
     b.addEventListener('click', ()=>{
-      document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));
+      tabs.forEach(x=>x.classList.remove('active'));
       document.querySelectorAll(`[data-view="${b.dataset.view}"]`).forEach(x=>x.classList.add('active'));
-      ['simple','advanced','charts','about'].forEach(v=>{
-        const el = $('view-'+v);
+      const pages = ['simple','advanced','charts','about'];
+      pages.forEach(v=>{
+        const el = document.getElementById('view-'+v);
         if(el) el.classList.toggle('hidden', v!==b.dataset.view);
       });
       if(b.dataset.view==='charts') renderCharts();
@@ -468,9 +474,9 @@ function bind(){
   });
 
   // Global
-  $('freq').onchange = ()=>{ state.freq = Number($('freq').value||0); refreshAll(); };
-  $('periods').oninput = ()=>{ state.periods = Number($('periods').value||0) || undefined; refreshAll(); };
-  $('payPeriods').oninput = ()=>{ state.payPeriods = Number($('payPeriods').value||0) || 0; refreshAll(); };
+  $('freq').onchange = ()=>{ state.freq = Number($('freq').value||1); refreshAll(); };
+  $('periods').oninput = ()=>{ state.periods = Math.max(1, Math.min(600, Number($('periods').value||1))); refreshAll(); };
+  $('payPeriods').oninput = ()=>{ state.payPeriods = Math.max(0, Number($('payPeriods').value||0)); refreshAll(); };
   $('saveLS').onclick = ()=>{ localStorage.setItem('ins_full_state', JSON.stringify(snapshot())); alert('บันทึกไว้ในอุปกรณ์แล้ว'); };
   $('loadLS').onclick = ()=>{
     const raw = localStorage.getItem('ins_full_state'); if(!raw) return alert('ยังไม่มีข้อมูลที่บันทึก');
@@ -480,16 +486,14 @@ function bind(){
 
   // Simple
   $('applySimple').onclick = ()=>{
-    const N = Number($('periods').value||0);
-    if(!N || N<1) return alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน');
     state.premium = Number($('s-premium').value||0);
     const sInter = Number($('s-interim').value||0);
     const sStart = Math.max(1, Number($('s-interim-start').value||1));
     const sCount = Math.max(0, Number($('s-interim-count').value||0));
     state.finalLump = Number($('s-final').value||0);
-    state.taxRate = Number($('s-tax-rate').value||0)/100 || 0;
+    state.taxRate = Number($('s-tax-rate').value||0)/100;
 
-    state.interim = new Array(N).fill(0);
+    state.interim = new Array(state.periods).fill(0);
     for(let i=0;i<sCount;i++){
       const idx = sStart-1+i; if(idx<state.interim.length) state.interim[idx] = sInter;
     }
@@ -503,38 +507,33 @@ function bind(){
   });
 
   // Tiers
-  $('addTier').onclick = ()=>{ state.tiers.push({from:undefined,to:undefined,amt:undefined}); renderTiers(); };
+  $('addTier').onclick = ()=>{ state.tiers.push({from:1,to:state.periods,amt:0}); renderTiers(); };
   $('tiers-list').addEventListener('input', (e)=>{
     const t=e.target; if(!t.matches('[data-tier]')) return;
     const i=+t.dataset.tier, k=t.dataset.k;
-    const val = t.value==='' ? undefined : (k==='amt' ? Number(t.value||0) : Number(t.value||1));
-    state.tiers[i][k] = val;
+    state.tiers[i][k] = (k==='amt') ? Number(t.value||0) : Number(t.value||1);
   });
   $('tiers-list').addEventListener('click', (e)=>{
     const b=e.target; if(!b.matches('[data-tier-del]')) return;
     const i=+b.dataset.tierDel; state.tiers.splice(i,1); renderTiers();
   });
-  $('fillZero').onclick = ()=>{ const N = state.periods|0; state.interim = new Array(N).fill(0); refreshAll(); };
+  $('fillZero').onclick = ()=>{ state.interim = new Array(state.periods).fill(0); refreshAll(); };
   $('clearInterim').onclick = ()=>{ state.interim = []; refreshAll(); };
 
+  // >>> FIX: sync ก่อนเติม + ไม่ re-render โซนปุ่ม <<<
   $('applyTiers').onclick = ()=>{
     document.activeElement && document.activeElement.blur();
     syncTiersFromDOM();
-    const N = state.periods|0;
-    if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
-    if(state.interim.length!==N) state.interim = new Array(N).fill(0);
     for(const t of state.tiers){
-      if(!t) continue;
-      const s = Math.max(1, Math.min(N, (t.from|0)));
-      const e = Math.max(1, Math.min(N, (t.to|0)));
-      if(!s || !e) continue;
+      const s=Math.max(1, Math.min(state.periods, t.from|0));
+      const e=Math.max(1, Math.min(state.periods, t.to|0));
       for(let i=s-1;i<=e-1;i++) state.interim[i] = Number(t.amt||0);
     }
-    refreshAll();
-  });
+    refreshAll(); // จะ render เฉพาะรายการช่วง + ตาราง/ค่า KPI, ปุ่มยังอยู่เดิม ตัวหนังสือไม่หาย
+  };
 }
 
-/* ========= Snapshot ========= */
+/* ========= Compare helpers (คงไว้ให้ snapshot ใช้งาน) ========= */
 function snapshot(){
   return {
     freq: state.freq, periods: state.periods, payPeriods: state.payPeriods,
@@ -542,25 +541,24 @@ function snapshot(){
     finalLump: state.finalLump, taxRate: state.taxRate,
     taxStart: state.taxStart, taxEnd: state.taxEnd,
     taxCapPerPeriod: state.taxCapPerPeriod, taxCapContract: state.taxCapContract,
-    taxOnlyWhenPay: state.taxOnlyWhenPay, interim: [...state.interim], tiers:[...state.tiers]
+    taxOnlyWhenPay: state.taxOnlyWhenPay, interim: [...state.interim]
   };
 }
 function restore(snap){ Object.assign(state, snap); refreshAll(); }
 
-/* ========= Refresh ========= */
+/* ========= Refresh All ========= */
 function refreshAll(){
-  const N = state.periods|0;
-  while(state.interim.length < N) state.interim.push(0);
-  if(state.interim.length > N) state.interim = state.interim.slice(0,N);
+  while(state.interim.length < state.periods) state.interim.push(0);
+  if(state.interim.length > state.periods) state.interim = state.interim.slice(0,state.periods);
 
-  $('freq').value = (state.freq ?? '');
-  $('periods').value = (state.periods ?? '');
-  $('payPeriods').value = (state.payPeriods ?? '');
+  $('freq').value = String(state.freq);
+  $('periods').value = state.periods;
+  $('payPeriods').value = state.payPeriods;
 
-  if($('premium')) $('premium').value = (state.premium ?? '');
-  if($('feePerPeriod')) $('feePerPeriod').value = (state.feePerPeriod ?? '');
-  if($('taxRate')) $('taxRate').value = (state.taxRate!=null ? (state.taxRate*100).toFixed(2) : '');
-  if($('finalLump')) $('finalLump').value = (state.finalLump ?? '');
+  if($('premium')) $('premium').value = state.premium;
+  if($('feePerPeriod')) $('feePerPeriod').value = state.feePerPeriod;
+  if($('taxRate')) $('taxRate').value = (state.taxRate*100).toFixed(2);
+  if($('finalLump')) $('finalLump').value = state.finalLump;
 
   renderTiers();
   renderTable();
@@ -572,7 +570,16 @@ function refreshAll(){
 
 /* ========= Init ========= */
 function init(){
-  // no preset
+  state.freq = 1; state.periods = 19; state.payPeriods = 10;
+  state.premium = 50000; state.feePerPeriod = 0; state.taxRate = 0.15; state.finalLump = 0;
+  state.taxStart=1; state.taxEnd=19; state.taxCapPerPeriod=999999999; state.taxCapContract=999999999; state.taxOnlyWhenPay=true;
+
+  state.interim = new Array(19).fill(0);
+  for(let i=0;i<10;i++) state.interim[i]=3000;
+  for(let i=10;i<19;i++) state.interim[i]=6000;
+
+  state.tiers = [{from:1,to:10,amt:3000},{from:11,to:19,amt:6000}];
+
   bind();
   refreshAll();
 }
