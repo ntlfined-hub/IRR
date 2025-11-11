@@ -10,7 +10,7 @@
 <style>
   :root{
     --bg-from:#f8fafc; --bg-to:#eef2ff; --card:#ffffff; --line:#e5e7eb;
-    --text:#0f172a; --muted:#64748b; --accent:#6366f1; --accent-2:#4f46e5;
+    --text:#0f172a; --muted:#64748b; --accent:#6366f1;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -239,28 +239,30 @@
 
 <script>
 /* ===== Utilities ===== */
-const $ = (id)=>document.getElementById(id);
-const fmt = (n)=> (isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:2}) : '—');
-const pct = (x)=> (isFinite(x) ? (x*100).toFixed(4)+'%' : '—');
-const toNum = (v)=>{ const n = Number(String(v??'').trim()); return Number.isFinite(n)? n : 0; };
+var $ = function(id){ return document.getElementById(id); };
+function fmt(n){ return (isFinite(n) ? Number(n).toLocaleString(undefined,{maximumFractionDigits:2}) : '—'); }
+function pct(x){ return (isFinite(x) ? (x*100).toFixed(4)+'%' : '—'); }
+function toNum(v){ var s = (v==null?'':String(v)).trim(); var n = Number(s); return (isFinite(n)? n : 0); }
 
 /* ===== IRR ===== */
-function npv(rate, cf){ let s=0; for(let t=0;t<cf.length;t++) s += cf[t]/Math.pow(1+rate,t); return s; }
-function dnpv(rate, cf){ let s=0; for(let t=1;t<cf.length;t++) s += -t*cf[t]/Math.pow(1+rate,t+1); return s; }
+function npv(rate, cf){ var s=0; for(var t=0;t<cf.length;t++) s += cf[t]/Math.pow(1+rate,t); return s; }
+function dnpv(rate, cf){ var s=0; for(var t=1;t<cf.length;t++) s += -t*cf[t]/Math.pow(1+rate,t+1); return s; }
 function irr(cf){
-  if(!(cf.some(v=>v>0) && cf.some(v=>v<0))) return NaN;
-  let r=0.1;
-  for(let i=0;i<60;i++){
-    const f=npv(r,cf), df=dnpv(r,cf);
+  var pos=false, neg=false;
+  for(var k=0;k<cf.length;k++){ if(cf[k]>0) pos=true; if(cf[k]<0) neg=true; }
+  if(!(pos&&neg)) return NaN;
+  var r=0.1;
+  for(var i=0;i<60;i++){
+    var f=npv(r,cf), df=dnpv(r,cf);
     if(Math.abs(f)<1e-9) return r;
     if(df===0 || !isFinite(df)) break;
     r = r - f/df;
     if(!isFinite(r) || r<=-0.999999) break;
   }
-  let lo=-0.9999, hi=10, flo=npv(lo,cf), fhi=npv(hi,cf);
-  if(flo*fhi>0){ for(let k=0;k<10;k++){ hi*=2; fhi=npv(hi,cf); if(flo*fhi<=0) break; } if(flo*fhi>0) return NaN; }
-  for(let i=0;i<200;i++){
-    const mid=(lo+hi)/2, fm=npv(mid,cf);
+  var lo=-0.9999, hi=10, flo=npv(lo,cf), fhi=npv(hi,cf);
+  if(flo*fhi>0){ for(var j=0;j<10;j++){ hi*=2; fhi=npv(hi,cf); if(flo*fhi<=0) break; } if(flo*fhi>0) return NaN; }
+  for(var m=0;m<200;m++){
+    var mid=(lo+hi)/2, fm=npv(mid,cf);
     if(Math.abs(fm)<1e-9) return mid;
     if(flo*fm<=0){ hi=mid; fhi=fm; } else { lo=mid; flo=fm; }
   }
@@ -268,8 +270,7 @@ function irr(cf){
 }
 
 /* ===== State ===== */
-const state = {
-  // เริ่มแบบว่าง ไม่มีค่า default ผู้ใช้ต้องกรอกเอง
+var state = {
   freq: undefined, periods: undefined, payPeriods: undefined,
   premium: undefined, feePerPeriod: undefined, finalLump: undefined,
   taxRate: undefined, taxStart: undefined, taxEnd: undefined,
@@ -280,48 +281,55 @@ const state = {
 
 /* ===== Builders ===== */
 function buildRows(){
-  const N = state.periods|0;
-  const payN = Math.max(0, Math.min(state.payPeriods|0, N));
+  var N = state.periods|0;
+  var payN = Math.max(0, Math.min(state.payPeriods|0, N));
   while(state.interim.length < N) state.interim.push(0);
   if(state.interim.length > N) state.interim = state.interim.slice(0,N);
 
-  const rows = [];
-  let taxAccum = 0;
-  for(let i=0;i<N;i++){
-    const p = i+1;
-    const pay = (p<=payN) ? toNum(state.premium) : 0;
-    const fee = toNum(state.feePerPeriod);
+  var rows = [];
+  var taxAccum = 0;
+  for(var i=0;i<N;i++){
+    var p = i+1;
+    var pay = (p<=payN) ? toNum(state.premium) : 0;
+    var fee = toNum(state.feePerPeriod);
 
-    const eligible = (state.taxStart!=null && state.taxEnd!=null) ? (p>=state.taxStart && p<=state.taxEnd) : false;
-    let tax = 0;
+    var eligible = (state.taxStart!=null && state.taxEnd!=null) ? (p>=state.taxStart && p<=state.taxEnd) : false;
+    var tax = 0;
     if(eligible){
-      const rate = toNum(state.taxRate);
-      const capP = (state.taxCapPerPeriod==null? Infinity : toNum(state.taxCapPerPeriod));
-      const capC = (state.taxCapContract==null? Infinity : toNum(state.taxCapContract));
+      var rate = toNum(state.taxRate);
+      var capP = (state.taxCapPerPeriod==null? 9e14 : toNum(state.taxCapPerPeriod)); // ใช้เลขใหญ่แทน Infinity
+      var capC = (state.taxCapContract==null? 9e14 : toNum(state.taxCapContract));
       tax = Math.min(pay*rate, capP);
       if(taxAccum + tax > capC) tax = Math.max(0, capC - taxAccum);
     }
     taxAccum += tax;
 
-    const between = toNum(state.interim[i]||0);
-    const final = (p===N) ? toNum(state.finalLump||0) : 0;
-    const total = (between + tax + final) - pay - fee;
-    rows.push({period:p, pay, fee, between, tax, final, total});
+    var between = toNum(state.interim[i]||0);
+    var finalAmt = (p===N) ? toNum(state.finalLump||0) : 0;
+    var total = (between + tax + finalAmt) - pay - fee;
+    rows.push({period:p, pay:pay, fee:fee, between:between, tax:tax, final:finalAmt, total:total});
   }
   return rows;
 }
-function cashflows(rows){ return (rows||buildRows()).map(r=>r.total); }
+function cashflows(rows){
+  var r = rows||buildRows(), a = new Array(r.length);
+  for(var i=0;i<r.length;i++) a[i]=r[i].total;
+  return a;
+}
 
 /* ===== Renderers ===== */
 function refreshKPIs(rows){
   rows = rows || buildRows();
-  const cf = cashflows(rows);
-  const rPer = irr(cf);
-  const k = (state.freq>0) ? Math.max(1, state.freq) : null;
-  const rAnn = (k ? Math.pow(1+rPer, k)-1 : NaN);
+  var cf = cashflows(rows);
+  var rPer = irr(cf);
+  var k = (state.freq>0) ? Math.max(1, state.freq) : null;
+  var rAnn = (k ? Math.pow(1+rPer, k)-1 : NaN);
 
-  const out = rows.filter(r=>r.total<0).reduce((a,r)=>a+r.total,0);
-  const inn = rows.filter(r=>r.total>0).reduce((a,r)=>a+r.total,0);
+  var out=0, inn=0;
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].total<0) out+=rows[i].total;
+    if(rows[i].total>0) inn+=rows[i].total;
+  }
 
   $('k-irr-per').textContent = pct(rPer);
   $('k-irr-ann').textContent = (k ? pct(rAnn) : '—');
@@ -330,25 +338,37 @@ function refreshKPIs(rows){
 }
 function renderTable(rows){
   rows = rows || buildRows();
-  const tb = $('tbody');
-  tb.innerHTML = rows.map((r,i)=>`
-    <tr>
-      <td>${r.period}</td>
-      <td>${fmt(-r.pay)}</td>
-      <td>${fmt(-r.fee)}</td>
-      <td><input class="input" type="number" step="0.01" data-row="${i}" value="${r.between||0}" inputmode="decimal"></td>
-      <td>${fmt(r.tax)}</td>
-      <td>${fmt(r.final)}</td>
-      <td>${fmt(r.total)}</td>
-    </tr>
-  `).join('');
+  var tb = $('tbody'); if(!tb) return;
+  var html = '';
+  for(var i=0;i<rows.length;i++){
+    var r = rows[i];
+    html += '<tr>'
+      + '<td>'+r.period+'</td>'
+      + '<td>'+fmt(-r.pay)+'</td>'
+      + '<td>'+fmt(-r.fee)+'</td>'
+      + '<td><input class="input" type="number" step="0.01" data-row="'+i+'" value="'+(r.between||0)+'" inputmode="decimal"></td>'
+      + '<td>'+fmt(r.tax)+'</td>'
+      + '<td>'+fmt(r.final)+'</td>'
+      + '<td>'+fmt(r.total)+'</td>'
+      + '</tr>';
+  }
+  tb.innerHTML = html;
 
-  $('sPrem').textContent    = fmt(rows.reduce((a,r)=>a - r.pay, 0));
-  $('sFee').textContent     = fmt(rows.reduce((a,r)=>a - r.fee, 0));
-  $('sInterim').textContent = fmt(rows.reduce((a,r)=>a + r.between, 0));
-  $('sTax').textContent     = fmt(rows.reduce((a,r)=>a + r.tax, 0));
-  $('sFinal').textContent   = fmt(rows.reduce((a,r)=>a + r.final, 0));
-  $('sTotal').textContent   = fmt(rows.reduce((a,r)=>a + r.total, 0));
+  var sumPrem=0,sumFee=0,sumInterim=0,sumTax=0,sumFinal=0,sumTotal=0;
+  for(var j=0;j<rows.length;j++){
+    sumPrem += -rows[j].pay;
+    sumFee  += -rows[j].fee;
+    sumInterim += rows[j].between;
+    sumTax += rows[j].tax;
+    sumFinal += rows[j].final;
+    sumTotal += rows[j].total;
+  }
+  if($('sPrem')) $('sPrem').textContent = fmt(sumPrem);
+  if($('sFee')) $('sFee').textContent = fmt(sumFee);
+  if($('sInterim')) $('sInterim').textContent = fmt(sumInterim);
+  if($('sTax')) $('sTax').textContent = fmt(sumTax);
+  if($('sFinal')) $('sFinal').textContent = fmt(sumFinal);
+  if($('sTotal')) $('sTotal').textContent = fmt(sumTotal);
 }
 function renderCharts(rows){
   rows = rows || buildRows();
@@ -356,225 +376,258 @@ function renderCharts(rows){
   if(state.charts.cum){ state.charts.cum.destroy(); state.charts.cum=null; }
   if(!rows.length) return;
 
-  const cfCanvas = document.getElementById('cfChart');
-  const cumCanvas = document.getElementById('cumChart');
+  var cfCanvas = $('cfChart');
+  var cumCanvas = $('cumChart');
   if(!cfCanvas || !cumCanvas) return;
 
-  const labels = rows.map(r=>`งวด ${r.period}`);
-  const cf = rows.map(r=>r.total);
-  const cum = rows.reduce((arr,v)=>{ arr.push((arr.at(-1)||0)+v); return arr; }, []);
+  var labels = new Array(rows.length), cf = new Array(rows.length), cum = new Array(rows.length);
+  var acc = 0;
+  for(var i=0;i<rows.length;i++){
+    labels[i] = 'งวด '+rows[i].period;
+    cf[i] = rows[i].total;
+    acc += rows[i].total;
+    cum[i] = acc;
+  }
 
   state.charts.cf = new Chart(cfCanvas.getContext('2d'), {
-    type:'bar', data:{ labels, datasets:[{ label:'Total', data: cf }]},
+    type:'bar', data:{ labels:labels, datasets:[{ label:'Total', data: cf }]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-      scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
+      scales:{y:{ticks:{callback:function(v){return Number(v).toLocaleString();}}}}}
   });
   state.charts.cum = new Chart(cumCanvas.getContext('2d'), {
-    type:'line', data:{ labels, datasets:[{ label:'Cumulative', data: cum, borderWidth:2, fill:false }]},
+    type:'line', data:{ labels:labels, datasets:[{ label:'Cumulative', data: cum, borderWidth:2, fill:false }]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-      scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
+      scales:{y:{ticks:{callback:function(v){return Number(v).toLocaleString();}}}}}
   });
 }
 function renderTiers(){
-  const box = $('tiers');
-  if(!box) return;
-  box.innerHTML = state.tiers.map((t,idx)=>`
-    <div class="grid1 md:grid-cols-4 gap-2">
-      <div><input class="input" type="number" min="1" step="1" data-tier="${idx}" data-k="from" value="${t?.from ?? ''}" placeholder="จากงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" min="1" step="1" data-tier="${idx}" data-k="to" value="${t?.to ?? ''}" placeholder="ถึงงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t?.amt ?? ''}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
-      <div class="flex gap-2"><button type="button" class="btn w-full" data-tier-del="${idx}">ลบช่วง</button></div>
-    </div>
-  `).join('');
+  var box = $('tiers'); if(!box) return;
+  var html = '';
+  for(var i=0;i<state.tiers.length;i++){
+    var t = state.tiers[i] || {};
+    var vFrom = (t.from==null?'':t.from);
+    var vTo   = (t.to==null?'':t.to);
+    var vAmt  = (t.amt==null?'':t.amt);
+    html += '<div class="grid1 md:grid-cols-4 gap-2">'
+      + '<div><input class="input" type="number" min="1" step="1" data-tier="'+i+'" data-k="from" value="'+vFrom+'" placeholder="จากงวด" inputmode="numeric"></div>'
+      + '<div><input class="input" type="number" min="1" step="1" data-tier="'+i+'" data-k="to" value="'+vTo+'" placeholder="ถึงงวด" inputmode="numeric"></div>'
+      + '<div><input class="input" type="number" step="0.01" data-tier="'+i+'" data-k="amt" value="'+vAmt+'" placeholder="จำนวนเงิน" inputmode="decimal"></div>'
+      + '<div class="flex gap-2"><button type="button" class="btn w-full" data-tier-del="'+i+'">ลบช่วง</button></div>'
+      + '</div>';
+  }
+  box.innerHTML = html;
 }
 function syncTiersFromDOM(){
-  document.querySelectorAll('#tiers [data-tier][data-k]').forEach(el=>{
-    const i=+el.dataset.tier, k=el.dataset.k;
-    const raw = el.value;
-    const val = raw==='' ? undefined : Number(raw);
-    if(state.tiers[i]) state.tiers[i][k]=val;
-  });
+  var nodes = document.querySelectorAll('#tiers [data-tier][data-k]');
+  for(var i=0;i<nodes.length;i++){
+    var el = nodes[i];
+    var idx = +el.getAttribute('data-tier');
+    var key = el.getAttribute('data-k');
+    var raw = el.value;
+    var val = (raw===''? undefined : Number(raw));
+    if(!state.tiers[idx]) state.tiers[idx] = {from:undefined,to:undefined,amt:undefined};
+    state.tiers[idx][key] = val;
+  }
 }
-const isFiniteNum = v => typeof v==='number' && Number.isFinite(v);
+function isFiniteNum(v){ return typeof v==='number' && isFinite(v); }
 
-/* ===== Tabs (single source of truth) ===== */
-const allowedViews = ['simple','advanced','charts','about'];
+/* ===== Tabs ===== */
+var allowedViews = ['simple','advanced','charts','about'];
 function setView(view){
-  if(!allowedViews.includes(view)) return;
-  allowedViews.forEach(v=>{
-    const el = document.getElementById('view-'+v);
-    if(!el) return;
-    const active = (v===view);
-    el.classList.toggle('hidden', !active);
-    el.setAttribute('aria-hidden', active? 'false':'true');
-  });
-  document.querySelectorAll('[data-view]').forEach(b=>{
-    b.classList.toggle('active', b.dataset.view===view);
-    b.setAttribute('aria-selected', b.dataset.view===view ? 'true':'false');
-  });
+  if(allowedViews.indexOf(view)===-1) return;
+  for(var i=0;i<allowedViews.length;i++){
+    var v = allowedViews[i];
+    var el = $('view-'+v);
+    if(el){
+      var active = (v===view);
+      if(active) el.classList.remove('hidden'); else el.classList.add('hidden');
+      el.setAttribute('aria-hidden', active? 'false':'true');
+    }
+  }
+  var btns = document.querySelectorAll('[data-view]');
+  for(var j=0;j<btns.length;j++){
+    var b = btns[j];
+    var on = (b.getAttribute('data-view')===view);
+    if(on) b.classList.add('active'); else b.classList.remove('active');
+    b.setAttribute('aria-selected', on? 'true':'false');
+  }
   try{ history.replaceState(null, '', '#'+view); }catch(e){}
   if(view==='charts') renderCharts();
 }
 
 /* ===== Events ===== */
 function bind(){
-  // Tabs: click guard เฉพาะปุ่มที่มี data-view และเป็น view ที่อนุญาต
-  document.querySelectorAll('[data-view]').forEach(b=>{
-    b.addEventListener('click', (e)=>{
-      const v = b.dataset.view;
-      if(!v || !allowedViews.includes(v)) return;
-      e.preventDefault();
-      setView(v);
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-  });
+  // Tab click
+  var viewBtns = document.querySelectorAll('[data-view]');
+  for(var i=0;i<viewBtns.length;i++){
+    (function(b){
+      b.addEventListener('click', function(e){
+        var v = b.getAttribute('data-view');
+        if(!v || allowedViews.indexOf(v)===-1) return;
+        e.preventDefault();
+        setView(v);
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+    })(viewBtns[i]);
+  }
 
-  // Tabs: a11y – arrow navigation
-  document.querySelectorAll('[role="tablist"]').forEach(list=>{
-    list.addEventListener('keydown', (e)=>{
-      if(!['ArrowLeft','ArrowRight'].includes(e.key)) return;
-      const tabs = [...list.querySelectorAll('[role="tab"]')];
-      const i = tabs.findIndex(t=>t.classList.contains('active'));
-      const ni = e.key==='ArrowRight' ? (i+1)%tabs.length : (i-1+tabs.length)%tabs.length;
+  // A11y arrow keys
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  for(var k=0;k<tablists.length;k++){
+    tablists[k].addEventListener('keydown', function(e){
+      if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
+      var tabs = this.querySelectorAll('[role="tab"]');
+      var activeIdx = 0;
+      for(var t=0;t<tabs.length;t++){ if(tabs[t].classList.contains('active')){ activeIdx=t; break; } }
+      var ni = (e.key==='ArrowRight') ? (activeIdx+1)%tabs.length : (activeIdx-1+tabs.length)%tabs.length;
       tabs[ni].focus(); tabs[ni].click();
     });
-  });
+  }
 
   // Global inputs
-  $('freq').onchange = ()=>{ state.freq = toNum($('freq').value)||undefined; refreshAll(); };
-  $('periods').oninput = ()=>{ state.periods = toNum($('periods').value)||undefined; refreshAll(); };
-  $('payPeriods').oninput = ()=>{ state.payPeriods = toNum($('payPeriods').value)||undefined; refreshAll(); };
+  if($('freq')) $('freq').onchange = function(){ state.freq = toNum(this.value)||undefined; refreshAll(); };
+  if($('periods')) $('periods').oninput = function(){ state.periods = toNum(this.value)||undefined; refreshAll(); };
+  if($('payPeriods')) $('payPeriods').oninput = function(){ state.payPeriods = toNum(this.value)||undefined; refreshAll(); };
 
   // Save/Load/Print
-  $('saveLS').onclick = ()=>{ localStorage.setItem('ins_full_state', JSON.stringify(snapshot())); alert('บันทึกไว้ในอุปกรณ์แล้ว'); };
-  $('loadLS').onclick = ()=>{
-    const raw = localStorage.getItem('ins_full_state');
+  if($('saveLS')) $('saveLS').onclick = function(){ localStorage.setItem('ins_full_state', JSON.stringify(snapshot())); alert('บันทึกไว้ในอุปกรณ์แล้ว'); };
+  if($('loadLS')) $('loadLS').onclick = function(){
+    var raw = localStorage.getItem('ins_full_state');
     if(!raw) return alert('ยังไม่มีข้อมูลที่บันทึก');
     try{
-      const data = JSON.parse(raw);
+      var data = JSON.parse(raw);
       if(!('periods' in data)) return alert('ไฟล์ไม่ถูกต้อง (ขาด periods)');
       restore(data);
     }catch(e){ alert('ข้อมูลไม่ถูกต้อง');}
   };
-  $('printBtn').onclick = ()=> window.print();
+  if($('printBtn')) $('printBtn').onclick = function(){ window.print(); };
 
   // Simple apply
-  $('applySimple').onclick = ()=>{
-    const N = toNum($('periods').value);
+  if($('applySimple')) $('applySimple').onclick = function(){
+    var N = toNum($('periods').value);
     if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
     state.premium = toNum($('s-premium').value);
-    const sInter = toNum($('s-interim').value);
-    const sStart = Math.max(1, toNum($('s-interim-start').value||1));
-    const sCount = Math.max(0, toNum($('s-interim-count').value));
+    var sInter = toNum($('s-interim').value);
+    var sStart = Math.max(1, toNum($('s-interim-start').value||1));
+    var sCount = Math.max(0, toNum($('s-interim-count').value));
     state.finalLump = toNum($('s-final').value);
     state.taxRate = toNum($('s-tax-rate').value)/100 || 0;
 
-    state.interim = new Array(N).fill(0);
-    for(let i=0;i<sCount;i++){
-      const idx = sStart-1+i; if(idx<state.interim.length) state.interim[idx] = sInter;
+    state.interim = new Array(N);
+    for(var i=0;i<N;i++) state.interim[i]=0;
+    for(var j=0;j<sCount;j++){
+      var idx = sStart-1+j; if(idx<state.interim.length) state.interim[idx] = sInter;
     }
     refreshAll();
   };
 
   // Table inline edit
-  $('tbody').addEventListener('input', (e)=>{
-    const t = e.target; if(!t.matches('input[data-row]')) return;
-    const idx = +t.dataset.row; state.interim[idx] = toNum(t.value); refreshAll();
-  });
+  var tb = $('tbody');
+  if(tb){
+    tb.addEventListener('input', function(e){
+      var t = e.target; if(!t.matches('input[data-row]')) return;
+      var idx = +t.getAttribute('data-row'); state.interim[idx] = toNum(t.value); refreshAll();
+    });
+  }
 
   // Tiers
-  $('addTier').onclick = ()=>{ state.tiers.push({from:undefined,to:undefined,amt:undefined}); renderTiers(); };
-  $('tiers').addEventListener('input', (e)=>{
-    const t=e.target; if(!t.matches('[data-tier]')) return;
-    const i=+t.dataset.tier, k=t.dataset.k;
-    state.tiers[i][k] = (t.value===''?undefined:toNum(t.value));
-  });
-  $('tiers').addEventListener('click', (e)=>{
-    const b=e.target; if(!b.matches('[data-tier-del]')) return;
-    const i=+b.dataset.tierDel; state.tiers.splice(i,1); renderTiers();
-  });
-  $('fillZero').onclick = ()=>{
-    const N = state.periods|0; if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
-    state.interim = new Array(N).fill(0); refreshAll();
+  if($('addTier')) $('addTier').onclick = function(){ state.tiers.push({from:undefined,to:undefined,amt:undefined}); renderTiers(); };
+  var tiersBox = $('tiers');
+  if(tiersBox){
+    tiersBox.addEventListener('input', function(e){
+      var t = e.target; if(!t.matches('[data-tier]')) return;
+      var i=+t.getAttribute('data-tier'), k=t.getAttribute('data-k');
+      state.tiers[i][k] = (t.value===''?undefined:toNum(t.value));
+    });
+    tiersBox.addEventListener('click', function(e){
+      var b=e.target; if(!b.matches('[data-tier-del]')) return;
+      var i=+b.getAttribute('data-tier-del'); state.tiers.splice(i,1); renderTiers();
+    });
+  }
+  if($('fillZero')) $('fillZero').onclick = function(){
+    var N = state.periods|0; if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
+    state.interim = new Array(N);
+    for(var i=0;i<N;i++) state.interim[i]=0;
+    refreshAll();
   };
-  $('clearInterim').onclick = ()=>{ state.interim = []; refreshAll(); };
-  $('applyTiers').onclick = ()=>{
+  if($('clearInterim')) $('clearInterim').onclick = function(){ state.interim = []; refreshAll(); };
+  if($('applyTiers')) $('applyTiers').onclick = function(){
     syncTiersFromDOM();
-    const N = state.periods|0;
+    var N = state.periods|0;
     if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
-    if(state.interim.length!==N) state.interim = new Array(N).fill(0);
-
-    for(const t of state.tiers){
-      if(!t) continue;
-      // apply เฉพาะช่วงที่มี from, to, amt เป็นตัวเลขครบถ้วน
+    if(state.interim.length!==N){
+      state.interim = new Array(N);
+      for(var z=0;z<N;z++) state.interim[z]=0;
+    }
+    for(var x=0;x<state.tiers.length;x++){
+      var t = state.tiers[x]; if(!t) continue;
       if(!isFiniteNum(t.from) || !isFiniteNum(t.to) || !isFiniteNum(t.amt)) continue;
-      const s = Math.max(1, Math.min(N, t.from|0));
-      const e = Math.max(1, Math.min(N, t.to|0));
+      var s = Math.max(1, Math.min(N, t.from|0));
+      var e = Math.max(1, Math.min(N, t.to|0));
       if(s>e) continue;
-      for(let i=s-1;i<=e-1;i++) state.interim[i] = Number(t.amt);
+      for(var y=s-1;y<=e-1;y++) state.interim[y] = Number(t.amt);
     }
     refreshAll();
-  });
+  };
 }
 
-/* ===== Snapshot / Restore (with defaults & deep clone) ===== */
+/* ===== Snapshot / Restore ===== */
 function snapshot(){
   return {
-    freq: state.freq ?? 1,
-    periods: state.periods ?? 0,
-    payPeriods: state.payPeriods ?? 0,
-    premium: state.premium ?? 0,
-    feePerPeriod: state.feePerPeriod ?? 0,
-    finalLump: state.finalLump ?? 0,
-    taxRate: state.taxRate ?? 0,
-    taxStart: state.taxStart ?? 1,
-    taxEnd: state.taxEnd ?? (state.periods ?? 0),
-    taxCapPerPeriod: state.taxCapPerPeriod ?? Infinity,
-    taxCapContract: state.taxCapContract ?? Infinity,
-    taxOnlyWhenPay: state.taxOnlyWhenPay ?? true,
-    interim: [...state.interim],
-    tiers: state.tiers.map(t=> t ? {from:t.from, to:t.to, amt:t.amt} : t)
+    freq: state.freq!=null ? state.freq : 1,
+    periods: state.periods!=null ? state.periods : 0,
+    payPeriods: state.payPeriods!=null ? state.payPeriods : 0,
+    premium: state.premium!=null ? state.premium : 0,
+    feePerPeriod: state.feePerPeriod!=null ? state.feePerPeriod : 0,
+    finalLump: state.finalLump!=null ? state.finalLump : 0,
+    taxRate: state.taxRate!=null ? state.taxRate : 0,
+    taxStart: state.taxStart!=null ? state.taxStart : 1,
+    taxEnd: state.taxEnd!=null ? state.taxEnd : (state.periods||0),
+    taxCapPerPeriod: state.taxCapPerPeriod!=null ? state.taxCapPerPeriod : 900000000000000, // 9e14
+    taxCapContract: state.taxCapContract!=null ? state.taxCapContract : 900000000000000,
+    taxOnlyWhenPay: state.taxOnlyWhenPay!=null ? state.taxOnlyWhenPay : true,
+    interim: state.interim.slice(),
+    tiers: state.tiers.map(function(t){ return t ? {from:t.from, to:t.to, amt:t.amt} : t; })
   };
 }
 function restore(snap){
-  // defaults first
-  const def = snapshot();
-  // merge
-  const merged = Object.assign(def, snap||{});
-  Object.assign(state, merged);
+  var def = snapshot();
+  for(var k in def){ if(def.hasOwnProperty(k) && snap && (k in snap)) def[k]=snap[k]; }
+  for(var k2 in def){ if(def.hasOwnProperty(k2)) state[k2]=def[k2]; }
   refreshAll();
 }
 
-/* ===== Refresh (rows reuse) ===== */
+/* ===== Refresh ===== */
 function refreshAll(){
-  const N = state.periods|0;
+  var N = state.periods|0;
   while(state.interim.length < N) state.interim.push(0);
   if(state.interim.length > N) state.interim = state.interim.slice(0,N);
 
-  $('freq').value = (state.freq ?? '');
-  $('periods').value = (state.periods ?? '');
-  $('payPeriods').value = (state.payPeriods ?? '');
-  if($('premium')) $('premium').value = (state.premium ?? '');
-  if($('feePerPeriod')) $('feePerPeriod').value = (state.feePerPeriod ?? '');
+  if($('freq')) $('freq').value = (state.freq!=null ? String(state.freq) : '');
+  if($('periods')) $('periods').value = (state.periods!=null ? state.periods : '');
+  if($('payPeriods')) $('payPeriods').value = (state.payPeriods!=null ? state.payPeriods : '');
+  if($('premium')) $('premium').value = (state.premium!=null ? state.premium : '');
+  if($('feePerPeriod')) $('feePerPeriod').value = (state.feePerPeriod!=null ? state.feePerPeriod : '');
   if($('taxRate')) $('taxRate').value = (state.taxRate!=null ? (state.taxRate*100).toFixed(2) : '');
-  if($('finalLump')) $('finalLump').value = (state.finalLump ?? '');
+  if($('finalLump')) $('finalLump').value = (state.finalLump!=null ? state.finalLump : '');
 
   renderTiers();
 
-  const rows = buildRows();
+  var rows = buildRows();
   renderTable(rows);
   refreshKPIs(rows);
 
-  const chartsVisible = !document.getElementById('view-charts').classList.contains('hidden');
+  var chartsVisible = $('view-charts') && !$('view-charts').classList.contains('hidden');
   if(chartsVisible) renderCharts(rows);
 }
 
 /* ===== Init ===== */
 (function init(){
+  // bind หลัง DOM พร้อมแน่ ๆ (สคริปต์อยู่ท้ายหน้าอยู่แล้ว)
   bind();
   refreshAll();
-  const hash = (location.hash||'#simple').replace('#','');
-  setView(allowedViews.includes(hash)? hash : 'simple');
+  var hash = (location.hash||'#simple').replace('#','');
+  setView(allowedViews.indexOf(hash)===-1 ? 'simple' : hash);
 })();
 </script>
 </body>
