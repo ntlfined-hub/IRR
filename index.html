@@ -387,30 +387,34 @@ function syncTiersFromDOM(){
 }
 
 /* ===== Tabs - single source of truth ===== */
+const allowedViews = ['simple','advanced','charts','about'];
 function setView(view){
-  // show/hide panels
-  ['simple','advanced','charts','about'].forEach(v=>{
+  if(!allowedViews.includes(view)) return; // กันพลาด
+  allowedViews.forEach(v=>{
     const el = document.getElementById('view-'+v);
     if(!el) return;
     const active = (v===view);
     el.classList.toggle('hidden', !active);
     el.setAttribute('aria-hidden', active? 'false':'true');
   });
-  // sync buttons (both places)
   document.querySelectorAll('[data-view]').forEach(b=>{
     b.classList.toggle('active', b.dataset.view===view);
     b.setAttribute('aria-selected', b.dataset.view===view ? 'true':'false');
   });
-  // update hash (nice UX)
   try{ history.replaceState(null, '', '#'+view); }catch(e){}
   if(view==='charts') renderCharts();
 }
 
 /* ===== Events ===== */
 function bind(){
-  // header + bottom tabs
-  document.querySelectorAll('.tab, .seg button').forEach(b=>{
-    b.addEventListener('click', (e)=>{ e.preventDefault(); setView(b.dataset.view); window.scrollTo({top:0, behavior:'smooth'}); });
+  // ✅ จับเฉพาะปุ่มที่มี data-view เท่านั้น
+  document.querySelectorAll('[data-view]').forEach(b=>{
+    b.addEventListener('click', (e)=>{
+      const v = b.dataset.view;
+      if(!allowedViews.includes(v)) return;
+      setView(v);
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
   });
 
   // Global
@@ -459,7 +463,7 @@ function bind(){
   $('fillZero').onclick = ()=>{ const N = state.periods|0; state.interim = new Array(N).fill(0); refreshAll(); };
   $('clearInterim').onclick = ()=>{ state.interim = []; refreshAll(); };
   $('applyTiers').onclick = ()=>{
-    syncTiersFromDOM();   // สำคัญ: เก็บค่าที่พิมพ์ล่าสุดก่อนคำนวน
+    syncTiersFromDOM();   // เก็บค่าที่พิมพ์ไว้ก่อนคำนวณ
     const N = state.periods|0;
     if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
     if(state.interim.length!==N) state.interim = new Array(N).fill(0);
@@ -513,10 +517,8 @@ function refreshAll(){
 (function init(){
   bind();
   refreshAll();
-  // ตั้งค่าเริ่มต้นตาม hash (#simple/#advanced/…) หรือ fallback -> simple
   const hash = (location.hash||'#simple').replace('#','');
-  const allowed = ['simple','advanced','charts','about'];
-  setView(allowed.includes(hash)? hash : 'simple');
+  setView(allowedViews.includes(hash)? hash : 'simple'); // ค่าเริ่มต้น
 })();
 </script>
 </body>
