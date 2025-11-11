@@ -17,28 +17,25 @@
   html,body{height:100%}
   body{
     font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-    background:
-      radial-gradient(1200px 600px at 15% -10%, #e0e7ff 0%, transparent 60%),
-      radial-gradient(800px 500px at 90% 10%, #dbeafe 0%, transparent 60%),
-      linear-gradient(180deg,var(--bg-from),var(--bg-to));
+    background:radial-gradient(1200px 600px at 20% -10%, #eef2ff 0%, transparent 60%), 
+               linear-gradient(180deg,var(--bg-from),var(--bg-to));
     color:var(--text);
   }
   .wrap{max-width:1100px;margin:0 auto;padding:16px}
   .card{
     background:var(--card);border:1px solid var(--line);border-radius:16px;
-    box-shadow:0 10px 30px rgba(15,23,42,.08); transition:transform .18s ease, box-shadow .18s ease
+    box-shadow:0 10px 30px rgba(15,23,42,.08); transition:transform .15s ease, box-shadow .15s ease
   }
-  .card:hover{ transform:translateY(-1px); box-shadow:0 16px 36px rgba(15,23,42,.12) }
-  .btn{border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;line-height:1;font-weight:600;transition:filter .18s,background .18s,color .18s}
+  .card:hover{ transform:translateY(-1px); box-shadow:0 14px 34px rgba(15,23,42,.12) }
+  .btn{border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;line-height:1;transition:filter .2s}
   .btn:hover{background:#f8fafc;filter:brightness(1.02)}
-  .btn-primary{background:#111827;color:#fff;border-color:#111827}
-  .btn-primary:hover{background:#0f172a;color:#fff}
-  .btn-primary:active{background:#111827;color:#fff}
+  .btn-primary{background:#101113;color:#fff;border-color:#101113}
+  .btn-primary:hover{filter:brightness(1.08)}
   .seg{border:1px solid var(--line);border-radius:999px;padding:.35rem;display:inline-flex;gap:.25rem;background:#fff}
-  .seg button{padding:.55rem .95rem;border-radius:999px;font-weight:600}
+  .seg button{padding:.55rem .95rem;border-radius:999px;font-weight:600;transition:background .15s}
   .seg .active{background:#0f172a;color:#fff}
   .input{width:100%;border:1px solid var(--line);border-radius:12px;padding:1rem .95rem;font-size:1rem}
-  .input:focus{outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.22);border-color:#c7d2fe}
+  .input:focus{outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.2);border-color:#c7d2fe}
   .kbd{font-size:.75rem;border:1px dashed var(--line);background:#fff;border-radius:8px;padding:.2rem .45rem;color:var(--muted)}
   .table{width:100%;border-collapse:separate;border-spacing:0}
   .table th,.table td{border-bottom:1px solid var(--line);padding:.75rem;text-align:right;font-size:.95rem;white-space:nowrap}
@@ -46,6 +43,7 @@
   .kpi{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff;min-width:240px}
   .kpi .val{font-size:1.9rem;font-weight:700}
   .hint{font-size:.86rem;color:var(--muted)}
+  /* Mobile-first grids */
   .grid1{display:grid;grid-template-columns:1fr;gap:.75rem}
   @media(min-width:640px){ .grid2-sm{grid-template-columns:repeat(2,1fr)} }
   @media(min-width:768px){
@@ -53,8 +51,9 @@
     .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
     .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
   }
-  header.appbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(255,255,255,.72);border-bottom:1px solid var(--line)}
-  nav.bottom{position:sticky;bottom:0;z-index:40;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px calc(env(safe-area-inset-right,0) + 8px) calc(env(safe-area-inset-bottom,0) + 6px) calc(env(safe-area-inset-left,0) + 8px)}
+  /* Sticky header & bottom nav (safe-area) */
+  header.appbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(8px);background:rgba(255,255,255,.7);border-bottom:1px solid var(--line)}
+  nav.bottom{position:sticky;bottom:0;z-index:40;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:6px calc(env(safe-area-inset-right,0) + 8px) calc(env(safe-area-inset-bottom,0) + 6px) calc(env(safe-area-inset-left,0) + 8px)}
   nav.bottom .tab{flex:1;border-radius:12px;padding:.75rem .4rem;text-align:center;font-size:.9rem;border:1px solid transparent}
   nav.bottom .tab.active{background:#0f172a;color:#fff}
   .no-x{overflow-x:hidden}
@@ -67,7 +66,7 @@
 </style>
 </head>
 <body class="no-x">
-<!-- App Bar -->
+<!-- Top App Bar -->
 <header class="appbar">
   <div class="wrap py-3 flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
@@ -76,7 +75,7 @@
         <span class="kbd">IRR Pro</span><span class="kbd">Tax Cap</span><span class="kbd">Compare</span><span class="kbd">Sensitivity</span>
       </div>
     </div>
-    <!-- Desktop segmented tabs -->
+    <!-- Desktop segmented tabs (ตัด Tax / Compare / Sensitivity ออก) -->
     <div class="hidden md:block">
       <div class="seg">
         <button class="active" data-view="simple">Simple</button>
@@ -88,8 +87,8 @@
   </div>
 </header>
 
-<main class="wrap space-y-6 pb-28">
-  <!-- KPIs -->
+<main class="wrap space-y-5 pb-24">
+  <!-- KPI -->
   <section class="flex gap-3 overflow-x-auto snap-x">
     <div class="kpi snap-start">
       <div class="text-sm text-[var(--muted)]">IRR ต่อปี (Annualized)</div>
@@ -203,28 +202,22 @@
       </div>
     </div>
 
-    <!-- Tier Fills -->
     <div class="mt-3">
       <div class="flex items-center justify-between gap-3">
         <div class="font-semibold">กำหนดเงินคืนระหว่างงวด (หลายช่วง)</div>
         <div class="hint">คลิก “เพิ่มช่วง” เพื่อกำหนดได้ไม่จำกัด</div>
       </div>
-
-      <!-- รายการช่วง (render เฉพาะส่วนนี้) -->
-      <div id="tiers-list" class="space-y-2 mt-2"></div>
-
-      <!-- ปุ่มควบคุม (ไม่ถูก re-render แล้ว) -->
-      <div class="grid1 grid2 gap-2 mt-3">
+      <div id="tiers" class="space-y-2 mt-2"></div>
+      <div class="grid1 grid2 gap-2 mt-2">
         <button class="btn" id="addTier">+ เพิ่มช่วง</button>
-        <div class="flex gap-2 flex-wrap">
-          <button class="btn" id="fillZero">กำหนด 0 ทุกงวด</button>
-          <button class="btn" id="clearInterim">ล้างเงินคืนทั้งหมด</button>
-          <button class="btn btn-primary" id="applyTiers">เติมตามช่วง</button>
+        <div class="flex gap-2">
+          <button class="btn w-full" id="fillZero">กำหนด 0 ทุกงวด</button>
+          <button class="btn w-full" id="clearInterim">ล้างเงินคืนทั้งหมด</button>
+          <button class="btn btn-primary w-full" id="applyTiers">เติมตามช่วง</button>
         </div>
       </div>
     </div>
 
-    <!-- Editable Table -->
     <div class="mt-4">
       <div class="text-sm font-semibold mb-2">ตารางแก้ไขเงินคืนรายงวด</div>
       <div class="overflow-x-auto -mx-2 md:mx-0 px-2 md:px-0">
@@ -263,11 +256,11 @@
     <div class="grid1 md:grid-cols-2 gap-3">
       <div>
         <div class="text-sm text-[var(--muted)] mb-1">Cashflow by Period</div>
-        <div class="w-full" style="height:240px"><canvas id="cfChart"></canvas></div>
+        <div class="w-full" style="height:220px"><canvas id="cfChart"></canvas></div>
       </div>
       <div>
         <div class="text-sm text-[var(--muted)] mb-1">Cumulative Cashflow</div>
-        <div class="w-full" style="height:240px"><canvas id="cumChart"></canvas></div>
+        <div class="w-full" style="height:220px"><canvas id="cumChart"></canvas></div>
       </div>
     </div>
   </section>
@@ -282,9 +275,26 @@
       <li>โปรดตรวจเงื่อนไขผลิตภัณฑ์จริงและข้อกฎหมายภาษีล่าสุดก่อนตัดสินใจ</li>
     </ul>
   </section>
+
+  <!-- ซ่อนส่วน Tax/Compare/Sensitivity ไว้ (ยังคงอยู่เพื่อไม่ให้ logic พัง แต่ไม่ทำปุ่มเข้าถึง) -->
+  <section id="view-tax" class="card p-4 hidden"></section>
+  <section id="view-compare" class="card p-4 hidden">
+    <div class="hint">ส่วน Compare ถูกปิดการเข้าถึงจาก UI ตามคำขอ</div>
+    <div class="grid md:grid-cols-3 gap-3 mt-3" id="cmp-cards"></div>
+  </section>
+  <section id="view-sensitivity" class="card p-4 hidden">
+    <div class="hint">ส่วน Sensitivity ถูกปิดการเข้าถึงจาก UI ตามคำขอ</div>
+    <div class="grid md:grid-cols-3 gap-3 mt-3">
+      <div class="kpi"><div class="text-sm text-[var(--muted)]">IRR Base (Ann.)</div><div id="sn-base" class="val">—</div></div>
+      <div class="kpi"><div class="text-sm text-[var(--muted)]">IRR Adjusted</div><div id="sn-adj" class="val">—</div></div>
+      <div class="kpi"><div class="text-sm text-[var(--muted)]">Δ IRR</div><div id="sn-delta" class="val">—</div></div>
+    </div>
+    <input id="sn-prem" type="range" class="hidden"><input id="sn-inter" type="range" class="hidden"><input id="sn-final" type="range" class="hidden">
+    <span id="sn-prem-l" class="hidden"></span><span id="sn-inter-l" class="hidden"></span><span id="sn-final-l" class="hidden"></span>
+  </section>
 </main>
 
-<!-- Bottom Tabs (mobile) -->
+<!-- Bottom Tabs (mobile) — ตัด Tax / Compare / Sensitivity ออก -->
 <nav class="bottom md:hidden">
   <div class="wrap px-0">
     <div class="grid grid-cols-4 gap-2">
@@ -302,7 +312,7 @@ const $ = (id)=>document.getElementById(id);
 const fmt = (n)=> (isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:2}) : '—');
 const pct = (x)=> (isFinite(x) ? (x*100).toFixed(4)+'%' : '—');
 
-/* ========= IRR ========= */
+/* ========= IRR (robust) ========= */
 function npv(rate, cf){ let s=0; for(let t=0;t<cf.length;t++) s += cf[t]/Math.pow(1+rate,t); return s; }
 function dnpv(rate, cf){ let s=0; for(let t=1;t<cf.length;t++) s += -t*cf[t]/Math.pow(1+rate,t+1); return s; }
 function irr(cf){
@@ -335,7 +345,7 @@ const state = {
   charts: {cf:null, cum:null}
 };
 
-/* ========= Cashflow builder ========= */
+/* ========= Core cashflow builder ========= */
 function buildRows(){
   const N = state.periods|0, payN = Math.max(0, Math.min(state.payPeriods|0, N));
   while(state.interim.length < N) state.interim.push(0);
@@ -406,32 +416,6 @@ function renderTable(){
   $('sFinal').textContent   = fmt(rows.reduce((a,r)=>a + r.final, 0));
   $('sTotal').textContent   = fmt(rows.reduce((a,r)=>a + r.total, 0));
 }
-
-/* ====== TIERS (render เฉพาะรายการ ไม่แตะปุ่ม) ====== */
-function renderTiers(){
-  const box = $('tiers-list');
-  if(!box) return;
-  box.innerHTML = state.tiers.map((t,idx)=>`
-    <div class="grid1 md:grid-cols-4 gap-2">
-      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="from" value="${t.from}" placeholder="จากงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="to" value="${t.to}" placeholder="ถึงงวด" inputmode="numeric"></div>
-      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t.amt}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
-      <div class="flex gap-2">
-        <button class="btn w-full" data-tier-del="${idx}">ลบช่วง</button>
-      </div>
-    </div>
-  `).join('');
-}
-function syncTiersFromDOM(){
-  const nodes = document.querySelectorAll('#tiers-list [data-tier][data-k]');
-  nodes.forEach(el=>{
-    const i=+el.dataset.tier, k=el.dataset.k;
-    const val = (k==='amt') ? Number(el.value||0) : Number(el.value||1);
-    if(state.tiers[i]) state.tiers[i][k]=val;
-  });
-}
-
-/* ========= Charts ========= */
 function renderCharts(){
   const rows = buildRows();
   const labels = rows.map(r=>`งวด ${r.period}`);
@@ -454,16 +438,72 @@ function renderCharts(){
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
   });
 }
+function renderTiers(){
+  const box = $('tiers');
+  box.innerHTML = state.tiers.map((t,idx)=>`
+    <div class="grid1 md:grid-cols-4 gap-2">
+      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="from" value="${t.from}" placeholder="จากงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" step="1" min="1" data-tier="${idx}" data-k="to" value="${t.to}" placeholder="ถึงงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t.amt}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
+      <div class="flex gap-2">
+        <button class="btn w-full" data-tier-del="${idx}">ลบช่วง</button>
+      </div>
+    </div>
+  `).join('');
+}
 
-/* ========= Tabs / Events ========= */
+/* ========= Compare/Sensitivity helpers (คงไว้เพื่อความสมบูรณ์ของ logic) ========= */
+function snapshot(){
+  return {
+    freq: state.freq, periods: state.periods, payPeriods: state.payPeriods,
+    premium: state.premium, feePerPeriod: state.feePerPeriod,
+    finalLump: state.finalLump, taxRate: state.taxRate,
+    taxStart: state.taxStart, taxEnd: state.taxEnd,
+    taxCapPerPeriod: state.taxCapPerPeriod, taxCapContract: state.taxCapContract,
+    taxOnlyWhenPay: state.taxOnlyWhenPay, interim: [...state.interim]
+  };
+}
+function restore(snap){ Object.assign(state, snap); refreshAll(); }
+function renderCompare(){
+  const ids=['A','B','C'];
+  const box = $('cmp-cards');
+  if(!box) return;
+  const cards = ids.map(k=>{
+    const s = state.scenarios[k];
+    if(!s) return `<div class="card p-3"><div class="text-sm text-[var(--muted)]">Scenario ${k}</div><div class="mt-1 text-base">ยังไม่ได้บันทึก</div></div>`;
+    const cf = (()=>{
+      const bak = {...state}; const itBak=[...state.interim];
+      restore(s); const flows = cashflows();
+      Object.assign(state,bak); state.interim=[...itBak];
+      return flows;
+    })();
+    const rPer = irr(cf);
+    const rAnn = isFinite(rPer)? Math.pow(1+rPer, s.freq||1)-1 : NaN;
+    const out = cf.filter(x=>x<0).reduce((a,v)=>a+v,0);
+    const inn = cf.filter(x=>x>0).reduce((a,v)=>a+v,0);
+    return `
+    <div class="card p-3">
+      <div class="text-sm text-[var(--muted)]">Scenario ${k}</div>
+      <div class="mt-1 text-sm">IRR (Per): <span class="font-semibold">${pct(rPer)}</span></div>
+      <div class="mt-1 text-sm">IRR (Annualized): <span class="font-semibold">${pct(rAnn)}</span></div>
+      <div class="mt-1 text-sm">ลงทุนสุทธิ: <span class="font-semibold">${fmt(out)}</span></div>
+      <div class="mt-1 text-sm">เงินรับรวม: <span class="font-semibold">${fmt(inn)}</span></div>
+    </div>`;
+  }).join('');
+  box.innerHTML = cards;
+}
+function sensitivityEval(){ /* ส่วนนี้ถูกปิดจาก UI จึงไม่ประมวลผล */ }
+
+/* ========= Events ========= */
 function bind(){
-  // Tabs
+  // Tabs (desktop segmented & mobile bottom) — อิงปุ่มที่มีอยู่จริงเท่านั้น
   const tabs = document.querySelectorAll('[data-view]');
   tabs.forEach(b=>{
     b.addEventListener('click', ()=>{
       tabs.forEach(x=>x.classList.remove('active'));
       document.querySelectorAll(`[data-view="${b.dataset.view}"]`).forEach(x=>x.classList.add('active'));
-      const pages = ['simple','advanced','charts','about'];
+      // ซ่อน/โชว์เฉพาะวิวที่ยังใช้
+      const pages = ['simple','advanced','charts','about']; // ตัด tax/compare/sensitivity ออกจากการสลับ
       pages.forEach(v=>{
         const el = document.getElementById('view-'+v);
         if(el) el.classList.toggle('hidden', v!==b.dataset.view);
@@ -484,7 +524,7 @@ function bind(){
   };
   $('printBtn').onclick = ()=> window.print();
 
-  // Simple
+  // Simple apply
   $('applySimple').onclick = ()=>{
     state.premium = Number($('s-premium').value||0);
     const sInter = Number($('s-interim').value||0);
@@ -500,51 +540,52 @@ function bind(){
     refreshAll();
   };
 
-  // Table interim edits
-  $('tbody').addEventListener('input', (e)=>{
-    const t = e.target; if(!t.matches('input[data-row]')) return;
-    const idx = +t.dataset.row; state.interim[idx] = Number(t.value||0); refreshAll();
+  // Advanced inputs
+  ['premium','feePerPeriod','taxRate','finalLump'].forEach(id=>{
+    const el = $(id); if(!el) return;
+    el.oninput = ()=>{
+      state[id] = (id==='taxRate') ? Number(el.value||0)/100 : Number(el.value||0);
+      refreshAll();
+    };
   });
+
+  // Table interim edits
+  const tb = document.getElementById('tbody');
+  if(tb){
+    tb.addEventListener('input', (e)=>{
+      const t = e.target; if(!t.matches('input[data-row]')) return;
+      const idx = +t.dataset.row; state.interim[idx] = Number(t.value||0); refreshAll();
+    });
+  }
 
   // Tiers
-  $('addTier').onclick = ()=>{ state.tiers.push({from:1,to:state.periods,amt:0}); renderTiers(); };
-  $('tiers-list').addEventListener('input', (e)=>{
-    const t=e.target; if(!t.matches('[data-tier]')) return;
-    const i=+t.dataset.tier, k=t.dataset.k;
-    state.tiers[i][k] = (k==='amt') ? Number(t.value||0) : Number(t.value||1);
-  });
-  $('tiers-list').addEventListener('click', (e)=>{
-    const b=e.target; if(!b.matches('[data-tier-del]')) return;
-    const i=+b.dataset.tierDel; state.tiers.splice(i,1); renderTiers();
-  });
-  $('fillZero').onclick = ()=>{ state.interim = new Array(state.periods).fill(0); refreshAll(); };
-  $('clearInterim').onclick = ()=>{ state.interim = []; refreshAll(); };
-
-  // >>> FIX: sync ก่อนเติม + ไม่ re-render โซนปุ่ม <<<
-  $('applyTiers').onclick = ()=>{
-    document.activeElement && document.activeElement.blur();
-    syncTiersFromDOM();
-    for(const t of state.tiers){
-      const s=Math.max(1, Math.min(state.periods, t.from|0));
-      const e=Math.max(1, Math.min(state.periods, t.to|0));
-      for(let i=s-1;i<=e-1;i++) state.interim[i] = Number(t.amt||0);
-    }
-    refreshAll(); // จะ render เฉพาะรายการช่วง + ตาราง/ค่า KPI, ปุ่มยังอยู่เดิม ตัวหนังสือไม่หาย
-  };
+  const tiersBox = document.getElementById('tiers');
+  if(tiersBox){
+    $('addTier').onclick = ()=>{ state.tiers.push({from:1,to:state.periods,amt:0}); renderTiers(); };
+    tiersBox.addEventListener('input', (e)=>{
+      const t=e.target; if(!t.matches('[data-tier]')) return;
+      const i=+t.dataset.tier, k=t.dataset.k;
+      state.tiers[i][k] = (k==='amt') ? Number(t.value||0) : Number(t.value||1);
+    });
+    tiersBox.addEventListener('click', (e)=>{
+      const b=e.target; if(!b.matches('[data-tier-del]')) return;
+      const i=+b.dataset.tierDel; state.tiers.splice(i,1); renderTiers();
+    });
+    const applyBtn = document.getElementById('applyTiers');
+    const fill0Btn = document.getElementById('fillZero');
+    const clrBtn = document.getElementById('clearInterim');
+    applyBtn.onclick = ()=>{
+      for(const t of state.tiers){
+        const s=Math.max(1, Math.min(state.periods, t.from|0));
+        const e=Math.max(1, Math.min(state.periods, t.to|0));
+        for(let i=s-1;i<=e-1;i++) state.interim[i] = Number(t.amt||0);
+      }
+      refreshAll();
+    };
+    fill0Btn.onclick = ()=>{ state.interim = new Array(state.periods).fill(0); refreshAll(); };
+    clrBtn.onclick = ()=>{ state.interim = []; refreshAll(); };
+  }
 }
-
-/* ========= Compare helpers (คงไว้ให้ snapshot ใช้งาน) ========= */
-function snapshot(){
-  return {
-    freq: state.freq, periods: state.periods, payPeriods: state.payPeriods,
-    premium: state.premium, feePerPeriod: state.feePerPeriod,
-    finalLump: state.finalLump, taxRate: state.taxRate,
-    taxStart: state.taxStart, taxEnd: state.taxEnd,
-    taxCapPerPeriod: state.taxCapPerPeriod, taxCapContract: state.taxCapContract,
-    taxOnlyWhenPay: state.taxOnlyWhenPay, interim: [...state.interim]
-  };
-}
-function restore(snap){ Object.assign(state, snap); refreshAll(); }
 
 /* ========= Refresh All ========= */
 function refreshAll(){
@@ -560,15 +601,15 @@ function refreshAll(){
   if($('taxRate')) $('taxRate').value = (state.taxRate*100).toFixed(2);
   if($('finalLump')) $('finalLump').value = state.finalLump;
 
-  renderTiers();
   renderTable();
   refreshKPIs();
+  renderTiers();
 
   const chartsVisible = !document.getElementById('view-charts').classList.contains('hidden');
   if(chartsVisible) renderCharts();
 }
 
-/* ========= Init ========= */
+/* ========= Init (Preset) ========= */
 function init(){
   state.freq = 1; state.periods = 19; state.payPeriods = 10;
   state.premium = 50000; state.feePerPeriod = 0; state.taxRate = 0.15; state.finalLump = 0;
