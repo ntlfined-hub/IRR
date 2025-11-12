@@ -10,7 +10,7 @@
 <style>
   :root{
     --bg-from:#f8fafc; --bg-to:#eef2ff; --card:#ffffff; --line:#e5e7eb;
-    --text:#0f172a; --muted:#64748b; --accent:#6366f1;
+    --text:#0f172a; --muted:#64748b;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -25,7 +25,7 @@
   main{ padding-bottom:calc(96px + env(safe-area-inset-bottom,0)); }
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
   .btn{border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;line-height:1}
-  .btn-primary{background:#101113;color:#fff;border-color:#101113}
+  .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}
   .seg{border:1px solid var(--line);border-radius:999px;padding:.35rem;display:inline-flex;gap:.25rem;background:#fff}
   .seg button{padding:.55rem .95rem;border-radius:999px;font-weight:600}
   .seg .active{background:#0f172a;color:#fff}
@@ -252,10 +252,7 @@
 function $(id){ return document.getElementById(id); }
 function fmt(n){ return (isFinite(n) ? Number(n).toLocaleString(undefined,{maximumFractionDigits:2}) : '—'); }
 function pct(x){ return (isFinite(x) ? (x*100).toFixed(4)+'%' : '—'); }
-function toNum(v){
-  var s = (v==null?'':String(v)).trim().replace(',', '.'); // รองรับ comma
-  var n = Number(s); return (isFinite(n)? n : 0);
-}
+function toNum(v){ var s=(v==null?'':String(v)).trim().replace(',', '.'); var n=Number(s); return (isFinite(n)? n : 0); }
 function isFiniteNum(v){ return typeof v==='number' && isFinite(v); }
 
 /* ===== IRR ===== */
@@ -288,26 +285,25 @@ var state = {
   freq: undefined, periods: undefined, payPeriods: undefined,
   premium: undefined, feePerPeriod: undefined, finalLump: undefined,
   taxRate: undefined, taxStart: undefined, taxEnd: undefined,
-  taxCapPerPeriod: undefined, // ตีความเป็น "เพดานต่อปี"
-  taxCapContract: undefined,  // เพดานรวมทั้งสัญญา
+  taxCapPerPeriod: undefined, // ใช้เป็น “เพดานต่อปี”
+  taxCapContract: undefined,  // เพดานรวมสัญญา
   taxOnlyWhenPay: true,
   interim: [], tiers: [], charts: {cf:null, cum:null}
 };
 
-/* ===== Helpers ===== */
 function ensureTaxDefaults(){
-  if (isFiniteNum(state.periods) && state.periods>0){
+  if (isFinite(state.periods) && state.periods>0){
     if (state.taxStart==null) state.taxStart = 1;
     if (state.taxEnd==null)   state.taxEnd   = state.periods;
   }
   if (state.taxOnlyWhenPay==null) state.taxOnlyWhenPay = true;
 }
 
-/* ===== Builders ===== */
-/* ใหม่: ภาษีคำนวณเป็นรายปี (ต่อปีที่มีจ่ายเบี้ยจริง) และกระจายตามสัดส่วนเบี้ยในปีนั้น */
+/* ===== Core builder (ภาษีรายปี pro-rata) ===== */
 function buildRows(){
   var N = state.periods|0;
-  var freq = Math.max(1, state.freq|0);                    // งวดต่อปี (1=รายปี, 12=รายเดือน ฯลฯ)
+  var inferredFreq = (N>=12 ? 12 : 1);                          // เดาความถี่ถ้าไม่ตั้งค่า
+  var freq = (state.freq && state.freq>0) ? state.freq|0 : inferredFreq;
   var payN = Math.max(0, Math.min(state.payPeriods|0, N));
 
   while(state.interim.length < N) state.interim.push(0);
@@ -315,52 +311,47 @@ function buildRows(){
 
   ensureTaxDefaults();
 
-  // helper ช่วยหาปีของงวดที่ p (เริ่มที่ปี 1)
   function yearOf(p){ return Math.floor((p-1)/freq)+1; }
   var totalYears = yearOf(Math.max(N,1));
 
-  // รวมเบี้ยที่ "จ่ายจริง" ต่อปี
-  var yearPaySum = Array.from({length: totalYears+1}, function(){return 0;});
+  // รวมเบี้ยต่อปี (เฉพาะงวดที่จ่ายจริง)
+  var yearPaySum = Array.from({length: totalYears+1}, ()=>0);
   for(var p=1;p<=N;p++){
     var pay = (p<=payN) ? (toNum(state.premium)||0) : 0;
     if(pay>0) yearPaySum[yearOf(p)] += pay;
   }
 
-  // เพดานต่อปี/ต่อสัญญา
   var rate   = toNum(state.taxRate)||0;
-  var capY   = (state.taxCapPerPeriod==null ? 9e14 : toNum(state.taxCapPerPeriod)); // เพดาน "ต่อปี"
-  var capAll = (state.taxCapContract==null ? 9e14 : toNum(state.taxCapContract));   // เพดาน "รวมสัญญา"
+  var capY   = (state.taxCapPerPeriod==null ? 9e14 : toNum(state.taxCapPerPeriod));
+  var capAll = (state.taxCapContract==null ? 9e14 : toNum(state.taxCapContract));
 
-  // สิทธิรวมต่อปี (คำนวณจาก % ของเบี้ยรวมต่อปี และตัดเพดานต่อปี)
-  var yearTaxTotal = Array.from({length: totalYears+1}, function(){return 0;});
+  var yearTaxTotal  = Array.from({length: totalYears+1}, ()=>0);
+  var yearTaxRemain = Array.from({length: totalYears+1}, ()=>0);
   for(var y=1;y<=totalYears;y++){
-    var base = yearPaySum[y] * rate;  // % ของเบี้ยรวมทั้งปี
-    yearTaxTotal[y] = Math.min(base, capY);
+    var base = yearPaySum[y] * rate;
+    yearTaxTotal[y]  = Math.min(base, capY);
+    yearTaxRemain[y] = yearTaxTotal[y];
   }
-  // ยอดสิทธิที่เหลือต่อปี (เอาไว้ถูกกระจายออกไปทีละงวด)
-  var yearTaxRemain = yearTaxTotal.slice();
 
   var rows = [];
   var taxAccumContract = 0;
 
   for(var i=0;i<N;i++){
-    var p = i+1;
-    var y = yearOf(p);
+    var p = i+1, y = yearOf(p);
 
     var pay = (p<=payN) ? (toNum(state.premium)||0) : 0;
     var fee = toNum(state.feePerPeriod)||0;
     var between = toNum(state.interim[i]||0);
     var finalAmt = (p===N) ? (toNum(state.finalLump)||0) : 0;
 
-    var inWindow = (state.taxStart!=null && state.taxEnd!=null) ? (p>=state.taxStart && p<=state.taxEnd) : false;
+    var inWindow = (p>=state.taxStart && p<=state.taxEnd);
     var eligible = inWindow && (!state.taxOnlyWhenPay || pay>0);
 
     var tax = 0;
     if(eligible && rate>0 && yearPaySum[y]>0 && yearTaxRemain[y]>0){
-      var share = (pay>0 ? (pay / yearPaySum[y]) : 0); // สัดส่วนเบี้ยของงวดนี้ในปี y
+      var share = (pay>0 ? (pay / yearPaySum[y]) : 0);
       tax = yearTaxRemain[y] * share;
 
-      // เคารพเพดานรวมทั้งสัญญา
       if(taxAccumContract + tax > capAll){
         tax = Math.max(0, capAll - taxAccumContract);
       }
@@ -374,12 +365,7 @@ function buildRows(){
 
   return rows;
 }
-function cashflows(rows){
-  rows = rows || buildRows();
-  var a = new Array(rows.length);
-  for(var i=0;i<rows.length;i++) a[i]=rows[i].total;
-  return a;
-}
+function cashflows(rows){ rows = rows || buildRows(); return rows.map(r=>r.total); }
 
 /* ===== Renderers ===== */
 function refreshKPIs(rows){
@@ -390,10 +376,7 @@ function refreshKPIs(rows){
   var rAnn = (k ? Math.pow(1+rPer, k)-1 : NaN);
 
   var out=0, inn=0;
-  for(var i=0;i<rows.length;i++){
-    if(rows[i].total<0) out+=rows[i].total;
-    if(rows[i].total>0) inn+=rows[i].total;
-  }
+  rows.forEach(r=>{ if(r.total<0) out+=r.total; if(r.total>0) inn+=r.total; });
 
   $('k-irr-per').textContent = pct(rPer);
   $('k-irr-ann').textContent = (k ? pct(rAnn) : '—');
@@ -403,27 +386,20 @@ function refreshKPIs(rows){
 function renderTable(rows){
   rows = rows || buildRows();
   var tb = $('tbody'); if(!tb) return;
-  var html = '';
-  for(var i=0;i<rows.length;i++){
-    var r = rows[i];
-    html += '<tr>'
-      + '<td>'+r.period+'</td>'
-      + '<td>'+fmt(-r.pay)+'</td>'
-      + '<td>'+fmt(-r.fee)+'</td>'
-      + '<td><input class="input" type="number" step="0.01" data-row="'+i+'" value="'+(r.between||0)+'" inputmode="decimal"></td>'
-      + '<td>'+fmt(r.tax)+'</td>'
-      + '<td>'+fmt(r.final)+'</td>'
-      + '<td>'+fmt(r.total)+'</td>'
-      + '</tr>';
-  }
-  tb.innerHTML = html;
+  tb.innerHTML = rows.map((r,i)=>`
+    <tr>
+      <td>${r.period}</td>
+      <td>${fmt(-r.pay)}</td>
+      <td>${fmt(-r.fee)}</td>
+      <td><input class="input" type="number" step="0.01" data-row="${i}" value="${r.between||0}" inputmode="decimal"></td>
+      <td>${fmt(r.tax)}</td>
+      <td>${fmt(r.final)}</td>
+      <td>${fmt(r.total)}</td>
+    </tr>
+  `).join('');
 
   var sumPrem=0,sumFee=0,sumInterim=0,sumTax=0,sumFinal=0,sumTotal=0;
-  for(var j=0;j<rows.length;j++){
-    sumPrem += -rows[j].pay; sumFee += -rows[j].fee;
-    sumInterim += rows[j].between; sumTax += rows[j].tax;
-    sumFinal += rows[j].final; sumTotal += rows[j].total;
-  }
+  rows.forEach(r=>{ sumPrem+=-r.pay; sumFee+=-r.fee; sumInterim+=r.between; sumTax+=r.tax; sumFinal+=r.final; sumTotal+=r.total; });
   if($('sPrem')) $('sPrem').textContent = fmt(sumPrem);
   if($('sFee')) $('sFee').textContent = fmt(sumFee);
   if($('sInterim')) $('sInterim').textContent = fmt(sumInterim);
@@ -442,11 +418,7 @@ function updateRowAndFooters(idx){
   tr.cells[6].textContent = fmt(r.total);
 
   var sumPrem=0,sumFee=0,sumInterim=0,sumTax=0,sumFinal=0,sumTotal=0;
-  for(var j=0;j<rows.length;j++){
-    sumPrem += -rows[j].pay; sumFee += -rows[j].fee;
-    sumInterim += rows[j].between; sumTax += rows[j].tax;
-    sumFinal += rows[j].final; sumTotal += rows[j].total;
-  }
+  rows.forEach(x=>{ sumPrem+=-x.pay; sumFee+=-x.fee; sumInterim+=x.between; sumTax+=x.tax; sumFinal+=x.final; sumTotal+=x.total; });
   $('sPrem').textContent = fmt(sumPrem);
   $('sFee').textContent  = fmt(sumFee);
   $('sInterim').textContent = fmt(sumInterim);
@@ -462,20 +434,16 @@ function renderCharts(rows){
   var cfCanvas = $('cfChart'), cumCanvas = $('cumChart');
   if(!cfCanvas || !cumCanvas || !rows.length) return;
 
-  var labels = new Array(rows.length), cf = new Array(rows.length), cum = new Array(rows.length);
+  var labels=[], cf=[], cum=[];
   var acc = 0;
-  for(var i=0;i<rows.length;i++){
-    labels[i] = 'งวด '+rows[i].period;
-    cf[i] = rows[i].total;
-    acc += rows[i].total; cum[i] = acc;
-  }
+  rows.forEach(r=>{ labels.push('งวด '+r.period); cf.push(r.total); acc+=r.total; cum.push(acc); });
 
   if(!state.charts.cf){
     state.charts.cf = new Chart(cfCanvas.getContext('2d'), {
       type:'bar',
-      data:{ labels:labels, datasets:[{ label:'Total', data: cf }]},
+      data:{ labels, datasets:[{ label:'Total', data: cf }]},
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-        scales:{y:{ticks:{callback:function(v){return Number(v).toLocaleString();}}}}}
+        scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
     });
   }else{
     state.charts.cf.data.labels = labels;
@@ -486,9 +454,9 @@ function renderCharts(rows){
   if(!state.charts.cum){
     state.charts.cum = new Chart(cumCanvas.getContext('2d'), {
       type:'line',
-      data:{ labels:labels, datasets:[{ label:'Cumulative', data: cum, borderWidth:2, fill:false }]},
+      data:{ labels, datasets:[{ label:'Cumulative', data: cum, borderWidth:2, fill:false }]},
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-        scales:{y:{ticks:{callback:function(v){return Number(v).toLocaleString();}}}}}
+        scales:{y:{ticks:{callback:v=>Number(v).toLocaleString()}}}}
     });
   }else{
     state.charts.cum.data.labels = labels;
@@ -498,54 +466,40 @@ function renderCharts(rows){
 }
 function renderTiers(){
   var box = $('tiers'); if(!box) return;
-  var html = '';
-  for(var i=0;i<state.tiers.length;i++){
-    var t = state.tiers[i] || {};
-    var vFrom = (t.from==null?'':t.from);
-    var vTo   = (t.to==null?'':t.to);
-    var vAmt  = (t.amt==null?'':t.amt);
-    html += '<div class="grid1 md:grid-cols-4 gap-2 flash">'
-      + '<div><input class="input" type="number" min="1" step="1" data-tier="'+i+'" data-k="from" value="'+vFrom+'" placeholder="จากงวด" inputmode="numeric"></div>'
-      + '<div><input class="input" type="number" min="1" step="1" data-tier="'+i+'" data-k="to" value="'+vTo+'" placeholder="ถึงงวด" inputmode="numeric"></div>'
-      + '<div><input class="input" type="number" step="0.01" data-tier="'+i+'" data-k="amt" value="'+vAmt+'" placeholder="จำนวนเงิน" inputmode="decimal"></div>'
-      + '<div class="flex gap-2"><button type="button" class="btn w-full" data-tier-del="'+i+'">ลบช่วง</button></div>'
-      + '</div>';
-  }
-  box.innerHTML = html;
+  box.innerHTML = state.tiers.map((t,idx)=>`
+    <div class="grid1 md:grid-cols-4 gap-2 flash">
+      <div><input class="input" type="number" min="1" step="1" data-tier="${idx}" data-k="from" value="${t.from??''}" placeholder="จากงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" min="1" step="1" data-tier="${idx}" data-k="to" value="${t.to??''}" placeholder="ถึงงวด" inputmode="numeric"></div>
+      <div><input class="input" type="number" step="0.01" data-tier="${idx}" data-k="amt" value="${t.amt??''}" placeholder="จำนวนเงิน" inputmode="decimal"></div>
+      <div class="flex gap-2"><button type="button" class="btn w-full" data-tier-del="${idx}">ลบช่วง</button></div>
+    </div>
+  `).join('');
 }
 function syncTiersFromDOM(){
   var nodes = document.querySelectorAll('#tiers [data-tier][data-k]');
-  for(var i=0;i<nodes.length;i++){
-    var el = nodes[i];
+  nodes.forEach(el=>{
     var idx = +el.getAttribute('data-tier');
     var key = el.getAttribute('data-k');
     var raw = el.value;
     var val = (raw===''? undefined : Number(raw));
     if(!state.tiers[idx]) state.tiers[idx] = {from:undefined,to:undefined,amt:undefined};
     state.tiers[idx][key] = val;
-  }
+  });
 }
 
 /* ===== Tabs ===== */
 var allowedViews = ['simple','advanced','charts','about'];
 function setView(view){
   if(allowedViews.indexOf(view)===-1) return;
-  for(var i=0;i<allowedViews.length;i++){
-    var v = allowedViews[i];
+  allowedViews.forEach(v=>{
     var el = $('view-'+v);
-    if(el){
-      var active = (v===view);
-      if(active) el.classList.remove('hidden'); else el.classList.add('hidden');
-      el.setAttribute('aria-hidden', active? 'false':'true');
-    }
-  }
-  var btns = document.querySelectorAll('[data-view]');
-  for(var j=0;j<btns.length;j++){
-    var b = btns[j];
+    if(el){ var active=(v===view); el.classList.toggle('hidden', !active); el.setAttribute('aria-hidden', active? 'false':'true'); }
+  });
+  document.querySelectorAll('[data-view]').forEach(b=>{
     var on = (b.getAttribute('data-view')===view);
-    if(on) b.classList.add('active'); else b.classList.remove('active');
+    b.classList.toggle('active', on);
     b.setAttribute('aria-selected', on? 'true':'false');
-  }
+  });
   try{ history.replaceState(null, '', '#'+view); }catch(e){}
   if(view==='charts') renderCharts();
 }
@@ -566,7 +520,7 @@ function snapshot(){
     taxCapContract: state.taxCapContract!=null ? state.taxCapContract : 900000000000000,
     taxOnlyWhenPay: state.taxOnlyWhenPay!=null ? state.taxOnlyWhenPay : true,
     interim: state.interim.slice(),
-    tiers: state.tiers.map(function(t){ return t ? {from:t.from, to:t.to, amt:t.amt} : t; })
+    tiers: state.tiers.map(t=> t ? ({from:t.from, to:t.to, amt:t.amt}) : t)
   };
 }
 function restore(snap){
@@ -607,17 +561,13 @@ function refreshAll(){
 /* ===== Events ===== */
 function bind(){
   // Tabs
-  var viewBtns = document.querySelectorAll('[data-view]');
-  for(var i=0;i<viewBtns.length;i++){
-    (function(b){
-      b.addEventListener('click', function(e){
-        var v = b.getAttribute('data-view');
-        if(!v || allowedViews.indexOf(v)===-1) return;
-        e.preventDefault(); setView(v); window.scrollTo({top:0, behavior:'smooth'});
-      });
-    })(viewBtns[i]);
-  }
-  window.addEventListener('popstate', function(){
+  document.querySelectorAll('[data-view]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      var v = b.getAttribute('data-view'); if(!v || allowedViews.indexOf(v)===-1) return;
+      e.preventDefault(); setView(v); window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+  window.addEventListener('popstate', ()=>{
     var v = (location.hash||'#simple').slice(1);
     setView(allowedViews.indexOf(v)===-1 ? 'simple' : v);
   });
@@ -651,8 +601,7 @@ function bind(){
     state.finalLump = toNum($('s-final').value);
     state.taxRate = toNum($('s-tax-rate').value)/100 || 0;
 
-    state.interim = new Array(N);
-    for(var i=0;i<N;i++) state.interim[i]=0;
+    state.interim = new Array(N).fill(0);
     for(var j=0;j<sCount;j++){
       var idx = sStart-1+j; if(idx<state.interim.length) state.interim[idx] = sInter;
     }
@@ -690,43 +639,36 @@ function bind(){
   }
   if($('fillZero')) $('fillZero').onclick = function(){
     var N = state.periods|0; if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
-    state.interim = new Array(N);
-    for(var i=0;i<N;i++) state.interim[i]=0;
-    refreshAll();
+    state.interim = new Array(N).fill(0); refreshAll();
   };
   if($('clearInterim')) $('clearInterim').onclick = function(){ state.interim = []; refreshAll(); };
   if($('applyTiers')) $('applyTiers').onclick = function(){
     syncTiersFromDOM();
     var N = state.periods|0;
     if(!N){ alert('กรุณาระบุ "จำนวนงวดทั้งหมด" ก่อน'); return; }
-    if(state.interim.length!==N){
-      state.interim = new Array(N);
-      for(var z=0;z<N;z++) state.interim[z]=0;
-    }
-    for(var x=0;x<state.tiers.length;x++){
-      var t = state.tiers[x]; if(!t) continue;
-      if(!isFiniteNum(t.from) || !isFiniteNum(t.to) || !isFiniteNum(t.amt)) continue;
-      var s = Math.max(1, Math.min(N, t.from|0));
-      var e = Math.max(1, Math.min(N, t.to|0));
-      if(s>e) continue;
-      for(var y=s-1;y<=e-1;y++) state.interim[y] = Number(t.amt);
-    }
+    if(state.interim.length!==N) state.interim = new Array(N).fill(0);
+    state.tiers.forEach(t=>{
+      if(!t || !isFiniteNum(t.from) || !isFiniteNum(t.to) || !isFiniteNum(t.amt)) return;
+      var s=Math.max(1, Math.min(N, t.from|0));
+      var e=Math.max(1, Math.min(N, t.to|0));
+      if(s>e) return;
+      for(var i=s-1;i<=e-1;i++) state.interim[i] = Number(t.amt);
+    });
     var tiers = $('tiers'); if(tiers){ tiers.classList.remove('flash'); void tiers.offsetWidth; tiers.classList.add('flash'); }
     renderTable(); refreshKPIs(); if(!$('view-charts').classList.contains('hidden')) renderCharts();
   };
 
   // a11y arrow keys
-  var tablists = document.querySelectorAll('[role="tablist"]');
-  for(var k=0;k<tablists.length;k++){
-    tablists[k].addEventListener('keydown', function(e){
+  document.querySelectorAll('[role="tablist"]').forEach(list=>{
+    list.addEventListener('keydown', e=>{
       if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
-      var tabs = this.querySelectorAll('[role="tab"]'); if(!tabs.length) return;
+      var tabs = list.querySelectorAll('[role="tab"]'); if(!tabs.length) return;
       var activeIdx = 0;
-      for(var t=0;t<tabs.length;t++){ if(tabs[t].classList.contains('active')){ activeIdx=t; break; } }
+      tabs.forEach((t,i)=>{ if(t.classList.contains('active')) activeIdx=i; });
       var ni = (e.key==='ArrowRight') ? (activeIdx+1)%tabs.length : (activeIdx-1+tabs.length)%tabs.length;
       tabs[ni].focus(); tabs[ni].click();
     });
-  }
+  });
 }
 
 /* ===== Init ===== */
